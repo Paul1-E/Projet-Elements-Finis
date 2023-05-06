@@ -19,27 +19,27 @@ int main(void)
 //  -1- Construction de la geometrie 
 //
 
-    double Lx = 1.0;
-    double Ly = 1.0;     
+    double Lx = 10.0;
+    double Ly = 6.0;     
     geoInitialize();
     femGeo* theGeometry = geoGetGeometry();
     
     theGeometry->LxPlate     =  Lx;
     theGeometry->LyPlate     =  Ly;     
     theGeometry->h           =  Lx * 0.05;    
-    theGeometry->elementType = FEM_QUAD;
+    theGeometry->elementType = FEM_TRIANGLE;
   
     geoMeshGenerate();      // Utilisation de OpenCascade
     
 //  geoMeshGenerateGeo();   // Utilisation de outils de GMSH  
-                            // Attention : les entités sont différentes !
-                            // On a aussi inversé la géomtrie pour rire !
+                            // Attention : les entitï¿½s sont diffï¿½rentes !
+                            // On a aussi inversï¿½ la gï¿½omtrie pour rire !
                             
 //  geoMeshGenerateGeoFile("../data/mesh.geo");   // Lecture fichier geo
   
     geoMeshImport();
-    geoSetDomainName(0,"Symetry");
-    geoSetDomainName(7,"Bottom");
+    //geoSetDomainName(0,"Symetry");
+    //geoSetDomainName(7,"Bottom");
     geoMeshWrite("../data/mesh.txt");
           
 //
@@ -51,14 +51,14 @@ int main(void)
     double rho = 7.85e3; 
     double g   = 9.81;
     femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRAIN);
-    femElasticityAddBoundaryCondition(theProblem,"Symetry",DIRICHLET_X,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_Y,0.0);
+    //femElasticityAddBoundaryCondition(theProblem,"Symetry",DIRICHLET_X,0.0);
+    //femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_Y,0.0);
     femElasticityPrint(theProblem);
     femElasticityWrite(theProblem,"../data/problem.txt");
  
 
 //
-//  -3- Champ de la taille de référence du maillage
+//  -3- Champ de la taille de rï¿½fï¿½rence du maillage
 //
 
     double *meshSizeField = malloc(theGeometry->theNodes->nNodes*sizeof(double));

@@ -712,7 +712,8 @@ double femMin(double *x, int n)
     double myMin = x[0];
     int i;
     for (i=1 ;i < n; i++) 
-        myMin = fmin(myMin,x[i]);
+        myMin = (myMin < x[i] ) ? myMin : x[i]; 
+        //to replace by fmin(myMin,x[i]);
     return myMin;
 }
 
@@ -721,10 +722,10 @@ double femMax(double *x, int n)
     double myMax = x[0];
     int i;
     for (i=1 ;i < n; i++) 
-        myMax = fmax(myMax,x[i]);
+        myMax = (myMax > x[i]) ? myMax : x[i];     
+        // to replace by fmax(myMax,x[i]);
     return myMax;
 }
-
 
 void femError(char *text, int line, char *file)                                  
 { 
