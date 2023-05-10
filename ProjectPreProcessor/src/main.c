@@ -38,9 +38,10 @@ int main(void)
 //  geoMeshGenerateGeoFile("../data/mesh.geo");   // Lecture fichier geo
   
     geoMeshImport();
-    //geoSetDomainName(0,"Symetry");
-    //geoSetDomainName(7,"Bottom");
-    geoMeshWrite("../data/mesh.txt");
+    geoSetDomainName(0,"left");
+    geoSetDomainName(14,"right");
+    geoSetDomainName(5,"top");
+    geoMeshWrite("../../Project/data/mesh.txt");
           
 //
 //  -2- Definition du probleme
@@ -51,10 +52,11 @@ int main(void)
     double rho = 7.85e3; 
     double g   = 9.81;
     femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRAIN);
-    //femElasticityAddBoundaryCondition(theProblem,"Symetry",DIRICHLET_X,0.0);
-    //femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_Y,0.0);
+    femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_Y,0.0);
+    femElasticityAddBoundaryCondition(theProblem,"right",DIRICHLET_Y,0.0);
+    femElasticityAddBoundaryCondition(theProblem,"top",DIRICHLET_Y,-0.1);
     femElasticityPrint(theProblem);
-    femElasticityWrite(theProblem,"../data/problem.txt");
+    femElasticityWrite(theProblem,"../../Project/data/problem.txt");
  
 
 //
