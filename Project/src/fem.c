@@ -295,10 +295,10 @@ void _p1c0_phi(double xsi, double eta, double *phi)
 
 void _p1c0_dphidx(double xsi, double eta, double *dphidxsi, double *dphideta)
 {
-    dphidxsi[0] = -1.0;  
+    dphidxsi[0] = -1.0;
     dphidxsi[1] =  1.0;
     dphidxsi[2] =  0.0;
-    dphideta[0] = -1.0;  
+    dphideta[0] = -1.0;
     dphideta[1] =  0.0;
     dphideta[2] =  1.0;
 

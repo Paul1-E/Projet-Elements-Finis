@@ -127,8 +127,8 @@ void geoMeshImport()
     int nElemTriangles = nElem;
     gmshModelMeshGetElementsByType(3,&elem,&nElem,
                                &node,&nNode,-1,0,1,&ierr);    ErrorGmsh(ierr);
-    if (nElem != 0 && nElemTriangles != 0)  
-      Error("Cannot consider hybrid geometry with triangles and quads :-(");                       
+    /*if (nElem != 0 && nElemTriangles != 0)  
+      Error("Cannot consider hybrid geometry with triangles and quads :-(");       */            
                                
     if (nElem != 0) {
       femMesh *theElements = malloc(sizeof(femMesh));

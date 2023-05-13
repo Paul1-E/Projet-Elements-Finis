@@ -26,7 +26,7 @@ int main(void)
     
     theGeometry->LxPlate     =  Lx;
     theGeometry->LyPlate     =  Ly;     
-    theGeometry->h           =  Lx * 0.05;    
+    theGeometry->h           =  Lx * 0.08;    
     theGeometry->elementType = FEM_TRIANGLE;
   
     geoMeshGenerate();      // Utilisation de OpenCascade
@@ -51,7 +51,7 @@ int main(void)
     double nu  = 0.3;
     double rho = 7.85e3; 
     double g   = 9.81;
-    femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRAIN);
+    femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRESS);
     femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_Y,0.0);
     femElasticityAddBoundaryCondition(theProblem,"right",DIRICHLET_Y,0.0);
     femElasticityAddBoundaryCondition(theProblem,"top",DIRICHLET_Y,-0.1);

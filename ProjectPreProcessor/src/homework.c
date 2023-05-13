@@ -11,7 +11,8 @@
 double geoSize(double x, double y) {
 
     femGeo* theGeometry = geoGetGeometry();
-    return theGeometry->h*0.5;
+    double f = 2*(exp(-pow(x, 2)/(theGeometry->LxPlate*2)) + exp(-pow(y-theGeometry->LyPlate/2, 2)/(theGeometry->LyPlate*2)));
+    return theGeometry->h/f;
 }
 
 

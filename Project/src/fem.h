@@ -28,6 +28,7 @@ typedef enum {FEM_TRIANGLE,FEM_QUAD} femElementType;
 typedef enum {DIRICHLET_X,DIRICHLET_Y,DIRICHLET_N,DIRICHLET_T,
               NEUMANN_X,NEUMANN_Y,NEUMANN_N,NEUMANN_T} femBoundaryType;
 typedef enum {PLANAR_STRESS,PLANAR_STRAIN,AXISYM} femElasticCase;
+typedef enum {FEM_NO,FEM_XNUM,FEM_YNUM} femRenumType;
 
 
 typedef struct {
@@ -155,6 +156,9 @@ void                femError(char *text, int line, char *file);
 void                femErrorScan(int test, int line, char *file);
 void                femErrorGmsh(int test, int line, char *file);
 void                femWarning(char *text, int line, char *file);
+
+double**            femFindStress(femProblem* theProblem, double* displacements);
+void                femPrintStress(femProblem *theProblem, double **stress);
 
 
 #endif
