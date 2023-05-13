@@ -103,7 +103,6 @@ double *femElasticitySolve(femProblem *theProblem)
     femGeo         *theGeometry = theProblem->geometry;
     femNodes       *theNodes = theGeometry->theNodes;
     femMesh        *theMesh = theGeometry->theElements;
-    int iCase = theProblem->planarStrainStress;
     
     int nLocal = theMesh->nLocalNode;
 
@@ -148,31 +147,7 @@ double *femElasticitySolve(femProblem *theProblem)
             
             for (i = 0; i < theSpace->n; i++) {    
                 dphidx[i] = (dphidxsi[i] * dydeta - dphideta[i] * dydxsi) / jac;       
-                dphidy[i] = (dphideta[i] * dxdxsi - dphidxsi[i] * dxdeta) / jac; }
-
-            //// Assemblage ////
-            // For axisym problems, we consider x --> r and y --> z
-            // Therefore, x > 0, and gravity is G = -g e_z
-            if (iCase == AXISYM) { 
-            for (i = 0; i < theSpace->n; i++) { 
-                for(j = 0; j < theSpace->n; j++) {
-                    A[mapX[i]][mapX[j]] += (dphidx[i] * a * dphidx[j] * x[iInteg] + 
-                                            dphidy[i] * c * dphidy[j] * x[iInteg] +
-                                            phi[i] * (b * dphidx[j] + a * phi[j]/x[iInteg]) +
-                                            dphidx[i] * b * phi[j]) * jac * weight;                                                                                            
-                    A[mapX[i]][mapY[j]] += (dphidx[i] * b * dphidy[j] * x[iInteg] + 
-                                            dphidy[i] * c * dphidx[j] * x[iInteg] + 
-                                            phi[i] * b * dphidy[j]) * jac * weight;                                                                                           
-                    A[mapY[i]][mapX[j]] += (dphidy[i] * b * dphidx[j] * x[iInteg] + 
-                                            dphidx[i] * c * dphidy[j] * x[iInteg] +
-                                            dphidy[i] * b * phi[j]) * jac * weight;                                                                                            
-                    A[mapY[i]][mapY[j]] += (dphidy[i] * a * dphidy[j] * x[iInteg] + 
-                                            dphidx[i] * c * dphidx[j] * x[iInteg]) * jac * weight; }}
-             for (i = 0; i < theSpace->n; i++) {
-                B[mapY[i]] -= phi[i] * x[iInteg] * g * rho * jac * weight; }
-            }
-
-            else {
+                dphidy[i] = (dphideta[i] * dxdxsi - dphidxsi[i] * dxdeta) / jac; }            
             for (i = 0; i < theSpace->n; i++) { 
                 for(j = 0; j < theSpace->n; j++) {
                     A[mapX[i]][mapX[j]] += (dphidx[i] * a * dphidx[j] + 
@@ -184,9 +159,8 @@ double *femElasticitySolve(femProblem *theProblem)
                     A[mapY[i]][mapY[j]] += (dphidy[i] * a * dphidy[j] + 
                                             dphidx[i] * c * dphidx[j]) * jac * weight; }}
              for (i = 0; i < theSpace->n; i++) {
-                B[mapY[i]] -= phi[i] * g * rho * jac * weight; }}}} 
-
-    
+                B[mapY[i]] -= phi[i] * g * rho * jac * weight; }}} 
+  
     int *theConstrainedNodes = theProblem->constrainedNodes;     
     for (int i=0; i < theSystem->size; i++) {
         if (theConstrainedNodes[i] != -1) {
@@ -200,7 +174,7 @@ double *femElasticitySolve(femProblem *theProblem)
 }
 
 
-double **femFindStress(femProblem *theProblem, double *displacements) {
+double *femFindStress(femProblem *theProblem, double *displacements) {
 
     femDiscrete    *theSpace = theProblem->space;
     femGeo         *theGeometry = theProblem->geometry;
@@ -212,7 +186,7 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
     double c   = theProblem->C; 
     int nLocal = theMesh->nLocalNode;
 
-    double **sigma = malloc(sizeof(double*)*theNodes->nNodes);
+    double *sigma = malloc(sizeof(double)*theNodes->nNodes*4);
     double *U = &displacements[0];
     double *V = &displacements[1];
 
@@ -223,7 +197,6 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
 
         int *nextElem = malloc(sizeof(int)*10);  // Array containing index of the first node of the elements which have a common node with current node i
         double *epsilon = malloc(sizeof(double)*4);
-        double *sigmaLoc = malloc(sizeof(double)*4);  // Stress of the current node
         int idxNext = 0;
         int c;
 
@@ -275,12 +248,11 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
             }
         }
 
-        sigmaLoc[0] = a*epsilon[0] + b*epsilon[1];
-        sigmaLoc[1] = a*epsilon[1] + b*epsilon[0];
-        sigmaLoc[2] = 2*c*epsilon[2];
-        sigmaLoc[3] = 2*c*epsilon[3];
-        sigma[i] = sigmaLoc;
-
+        sigma[i*4] = a*epsilon[0] + b*epsilon[1];
+        sigma[i*4 + 1] = a*epsilon[1] + b*epsilon[0];
+        sigma[i*4 + 2] = 2*c*epsilon[2];
+        sigma[i*4 + 3] = 2*c*epsilon[3];
+        
         free(epsilon);
         free(nextElem);
     }
@@ -288,10 +260,9 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
 }
 
 
-void femPrintStress(femProblem *theProblem, double **stress) {
-    int nNodes = theProblem->geometry->theNodes->nNodes;
+void femPrintStress(double *stress, int nNodes) {
     printf("\n ----------------- Stresses -----------------\n\n");
-    for (int i = 0; i < nNodes; i++) {
-        printf("%d : xx %14.7e, xy %14.7e, yx %14.7e, yy %14.7e\n", i, stress[i][0], stress[i][2], stress[i][3], stress[i][1]);
+    for (int i = 0; i < nNodes*4; i+=4) {
+        printf("%d : xx %14.7e, xy %14.7e, yx %14.7e, yy %14.7e\n", i/4, stress[i], stress[i + 2], stress[i + 3], stress[i + 1]);
     }
 }
