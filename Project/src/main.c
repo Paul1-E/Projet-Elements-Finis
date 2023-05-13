@@ -20,10 +20,11 @@ int main(void)
     femElasticityPrint(theProblem);
     double *theSoluce = femElasticitySolve(theProblem); 
     femNodes *theNodes = theGeometry->theNodes;
-    femFieldWrite(theNodes->nNodes,2,&theSoluce[0],"../data/U.txt");
-    femFieldWrite(theNodes->nNodes,2,&theSoluce[1],"../data/V.txt");
+    femFieldWrite(theNodes->nNodes,2,&theSoluce[0],"../data/U.txt", 3);
+    femFieldWrite(theNodes->nNodes,2,&theSoluce[1],"../data/V.txt", 3);
     double **theStress = femFindStress(theProblem, theSoluce);
     femPrintStress(theProblem, theStress);
+    femFieldWrite(theNodes->nNodes, 1, theStress, "../data/Stress.txt", 1);
     femElasticityFree(theProblem);
     geoFree();
     free(theStress);

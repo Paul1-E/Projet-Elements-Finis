@@ -55,6 +55,22 @@ int main(void)
     double hMax = femMax(normDisplacement,n);  
     printf(" ==== Minimum displacement          : %14.7e \n",hMin);
     printf(" ==== Maximum displacement          : %14.7e \n",hMax);
+
+
+//
+//      2.b - Creation du champ de contraintes
+//
+    
+    double StressFactor = 5;
+    double *stress = malloc(theNodes->nNodes * sizeof(double));
+    
+    for (int i=0; i<n; i++){
+        stress[i] = 0;
+    }
+    double stressMin = femMin(stress, n);  
+    double stressMax = femMax(stress, n);  
+    printf(" ==== Minimum stress          : %14.7e \n",stressMin);
+    printf(" ==== Maximum stress          : %14.7e \n",stressMax);
         
 //
 //  -3- Visualisation 
@@ -82,7 +98,7 @@ int main(void)
         
         if (t-told > 0.5) {freezingButton = FALSE; }
         if (mode == 1) {
-            glfemPlotField(theGeometry->theElements,normDisplacement);
+            glfemPlotField(theGeometry->theElements, normDisplacement);
             glfemPlotMesh(theGeometry->theElements); 
             sprintf(theMessage, "Number of elements : %d ",theGeometry->theElements->nElem);
             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }

@@ -129,7 +129,7 @@ double*             femElasticitySolve(femProblem *theProblem);
 void                femElasticityWrite(femProblem *theProbconst, const char *filename);
 femProblem*         femElasticityRead(femGeo* theGeometry, const char *filename);
 
-void                femFieldWrite(int size, int shift, double* value, const char *filename);
+void                femFieldWrite(int size, int shift, double* value, const char *filename, int line);
 int                 femFieldRead(int* size, int shift, double* value, const char *filename);
 
 femIntegration*     femIntegrationCreate(int n, femElementType type);

@@ -199,10 +199,12 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
         double *epsilon = malloc(sizeof(double)*4);
         double *sigmaLoc = malloc(sizeof(double)*4);  // Stress of the current node
         int idxNext = 0;
+        int c;
 
         for (int j = 0; j < theMesh->nElem*nLocal; j++) {  // Searching for elements next to current node
             if (theMesh->elem[j] == i) {
-                nextElem[idxNext] = j - j%nLocal;
+                c = j%nLocal;
+                nextElem[idxNext] = j - c;
                 idxNext++;
             }
         }
@@ -221,7 +223,7 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
             double dydeta = 0.0;
 
             for (int k = 0; k < nLocal; k++) {  
-                femDiscreteDphi2(theSpace, xsi[k], eta[k], dphidxsi, dphideta);
+                femDiscreteDphi2(theSpace, xsi[c], eta[c], dphidxsi, dphideta);
                 dxdxsi += theNodes->X[theMesh->elem[nextElem[j]+k]]*dphidxsi[k];       
                 dxdeta += theNodes->X[theMesh->elem[nextElem[j]+k]]*dphideta[k];   
                 dydxsi += theNodes->Y[theMesh->elem[nextElem[j]+k]]*dphidxsi[k];   
@@ -253,7 +255,6 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
         sigmaLoc[3] = 2*c*epsilon[3];
         sigma[i] = sigmaLoc;
 
-        //free(sigmaLoc);
         free(epsilon);
         free(nextElem);
     }

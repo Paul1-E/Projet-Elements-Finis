@@ -630,7 +630,7 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
     double value;
     double typeCondition;
     
-    while (feof(file) != TRUE) {
+    while (!feof(file)) {
         ErrorScan(fscanf(file,"%19[^\n]s \n",(char *)&theLine));
         if (strncasecmp(theLine,"Type of problem     ",19) == 0) {
             ErrorScan(fscanf(file,":  %[^\n]s \n",(char *)&theArgument));
@@ -680,13 +680,13 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
 }
 
 
-void femFieldWrite(int size, int shift, double* value, const char *filename) {
+void femFieldWrite(int size, int shift, double* value, const char *filename, int line) {
     FILE* file = fopen(filename,"w");
 
     fprintf(file, "Size %d \n", size);
     for (int i=0; i < size; i++){
           fprintf(file,"%14.7e",value[i*shift]);
-          if ((i+1) != size  && (i+1) % 3 == 0) fprintf(file,"\n"); }
+          if ((i+1) != size  && (i+1) % line == 0) fprintf(file,"\n"); }
     fprintf(file,"\n");
     fclose(file);
 }
