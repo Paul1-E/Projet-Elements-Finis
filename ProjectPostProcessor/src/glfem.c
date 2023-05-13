@@ -343,6 +343,7 @@ void glfemPlotField(femMesh *theMesh, double *u)
     glColor3f(0.0, 0.0, 0.0);
 }
 
+
 void glfemPlotMesh(femMesh *theMesh)
 {
     femNodes *theNodes = theMesh->nodes;

@@ -9,8 +9,11 @@
  *  All rights reserved.
  *
  */
- 
+
+
 #include "glfem.h"
+#include <time.h>
+
 
 int main(void)
 {  
@@ -39,18 +42,12 @@ int main(void)
 //
 //  -2.a- Création d'un backup du maillage non déformé
 //
-
     femNodes *theNodes = theGeometry->theNodes;
-    femMesh *backup = malloc(sizeof(femMesh*));
-    *(backup) = *(theGeometry->theElements);
-    backup->nodes = malloc(sizeof(femNodes*));
-    backup->nodes->X = malloc(sizeof(double)*theNodes->nNodes);
-    backup->nodes->Y = malloc(sizeof(double)*theNodes->nNodes);
-    backup->elem = malloc(sizeof(double)*theNodes->nNodes*backup->nLocalNode);
-    memcpy(backup->nodes->X, theNodes->X, sizeof(double)*theNodes->nNodes);
-    memcpy(backup->nodes->Y, theNodes->Y, sizeof(double)*theNodes->nNodes);
-    memcpy(backup->elem, theGeometry->theElements->elem, sizeof(double)*backup->nLocalNode*theNodes->nNodes);
-    double *zeros = malloc(sizeof(double)*n);
+    double *zeros = calloc(n, sizeof(double));
+    double *X = malloc(sizeof(double) * n);
+    double *Y = malloc(sizeof(double) * n);
+    memcpy(X, theNodes->X, sizeof(double)*n);
+    memcpy(Y, theNodes->Y, sizeof(double)*n);
     
 //
 //  -2.b- Deformation du maillage pour le plot final
@@ -58,16 +55,22 @@ int main(void)
 //
     
     double deformationFactor = 10;
-    double *normDisplacement = malloc(theNodes->nNodes * sizeof(double));
+    double *normDisplacement = malloc(n * sizeof(double));
     
     for (int i=0; i<n; i++) {
         theNodes->X[i] += theSoluce[2*i+0]*deformationFactor;
         theNodes->Y[i] += theSoluce[2*i+1]*deformationFactor;
         normDisplacement[i] = sqrt(theSoluce[2*i+0]*theSoluce[2*i+0] + 
                                    theSoluce[2*i+1]*theSoluce[2*i+1]); }
+
+    double *Xdef = malloc(sizeof(double) * n);
+    double *Ydef = malloc(sizeof(double) * n);
+    memcpy(Xdef, theNodes->X, sizeof(double)*n);
+    memcpy(Ydef, theNodes->Y, sizeof(double)*n);
+
   
-    double hMin = femMin(normDisplacement,n);  
-    double hMax = femMax(normDisplacement,n);  
+    double hMin = femMin(normDisplacement, n);  
+    double hMax = femMax(normDisplacement, n);  
     printf(" ==== Minimum displacement          : %14.7e \n",hMin);
     printf(" ==== Maximum displacement          : %14.7e \n",hMax);
 
@@ -119,12 +122,69 @@ int main(void)
         if (glfwGetKey(window,'V') == GLFW_PRESS) { mode = 1;}
         if (glfwGetKey(window,'C') == GLFW_PRESS) { mode = 2;}
         if (glfwGetKey(window,'B') == GLFW_PRESS) { mode = 3;}
+        if (glfwGetKey(window,'X') == GLFW_PRESS) { mode = 4;}
+        if (glfwGetKey(window,'S') == GLFW_PRESS) { mode = 5;}
         if (glfwGetKey(window,'N') == GLFW_PRESS && freezingButton == FALSE) { domain++; freezingButton = TRUE; told = t;}
         
         if (t-told > 0.5) {freezingButton = FALSE; }
+        if (mode == 4 || mode == 5) {
+            
+            double *field;
+            double min;
+            double max;
+
+            if (mode == 4) {
+                field = normDisplacement;
+                max = hMax;
+                min = hMin;
+            }
+            else {
+                field = stress; 
+                max = stressMax;
+                min = stressMin;
+            }
+
+            int nFrames = 40;
+            double *deltaField = malloc(sizeof(double)*n);
+            struct timespec time;
+            time.tv_nsec = 40e6;
+
+            for (int i=0; i<n; i++) {
+                theGeometry->theNodes->X[i] = X[i];
+                theGeometry->theNodes->Y[i] = Y[i];
+                deltaField[i] = field[i] / nFrames;
+                field[i] = 0;
+            }
+
+            for (int i = 0; i < nFrames; i++) {
+                
+                field[0] = max;
+                glfemPlotField(theGeometry->theElements, field);
+                glfemPlotMesh(theGeometry->theElements);
+                glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); 
+                nanosleep(&time, NULL);
+                glfwSwapBuffers(window);
+                glfwPollEvents();
+                glfwGetFramebufferSize(window,&w,&h);
+                glfemReshapeWindows(theGeometry->theNodes,w,h);
+
+                for (int j=0; j<n; j++) {
+                    theGeometry->theNodes->X[j] += theSoluce[2*j+0]*deformationFactor/nFrames;
+                    theGeometry->theNodes->Y[j] += theSoluce[2*j+1]*deformationFactor/nFrames;
+                    field[j] += deltaField[j];
+                }
+            }
+            free(deltaField);
+            if (mode == 4) mode = 1;
+            else mode = 2;
+        }
         if (mode == 3) {
-            glfemPlotField(backup, zeros);
-            glfemPlotMesh(backup); 
+            theGeometry->theElements->nodes->X = X;
+            theGeometry->theElements->nodes->Y = Y;
+            glfemPlotField(theGeometry->theElements, zeros);
+            glfemPlotMesh(theGeometry->theElements); 
+            theGeometry->theNodes->X = Xdef,
+            theGeometry->theNodes->Y = Ydef;
             sprintf(theMessage, "Number of elements : %d ",theGeometry->theElements->nElem);
             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
         if (mode == 2) {
@@ -141,10 +201,11 @@ int main(void)
             domain = domain % theGeometry->nDomains;
             glfemPlotDomain( theGeometry->theDomains[domain]); 
             sprintf(theMessage, "%s : %d ",theGeometry->theDomains[domain]->name,domain);
-             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage);  }
+            glColor3f(1.0,0.0,0.0); glfemMessage(theMessage);  }
             
          glfwSwapBuffers(window);
          glfwPollEvents();
+
     } while( glfwGetKey(window,GLFW_KEY_ESCAPE) != GLFW_PRESS &&
              glfwWindowShouldClose(window) != 1 );
             
@@ -155,7 +216,10 @@ int main(void)
     geoFree();
     free(stress);
     free(zeros);
-    freeBackup(backup);
+    free(X);
+    free(Y);
+    free(Xdef);
+    free(Ydef);
     glfwTerminate(); 
     
     exit(EXIT_SUCCESS);

@@ -886,12 +886,3 @@ void femWarning(char *text, int line, char *file)
     printf("\n  Warning in %s at line %d : \n  %s\n", file, line, text);
     printf("--------------------------------------------------------------------- Yek Yek !! \n\n");                                              
 }
-
-
-void freeBackup(femMesh *backup) {
-    free(backup->nodes->X);
-    free(backup->nodes->Y);
-    free(backup->elem);
-    free(backup->nodes);
-    free(backup);
-}
