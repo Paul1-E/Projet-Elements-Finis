@@ -31,21 +31,36 @@ int main(void)
     double *theSoluce = theProblem->system->B;
     int n = theGeometry->theNodes->nNodes;
 
-    femFieldRead(&n,2,&theSoluce[0],"../../Project/data/U.txt");
-    femFieldRead(&n,2,&theSoluce[1],"../../Project/data/V.txt");
+    femFieldRead(&n,2,&theSoluce[0],"../../Project/data/U.txt", 3);
+    femFieldRead(&n,2,&theSoluce[1],"../../Project/data/V.txt", 3);
     femElasticityPrint(theProblem);
     
+
+//
+//  -2.a- Création d'un backup du maillage non déformé
+//
+
+    femNodes *theNodes = theGeometry->theNodes;
+    femMesh *backup = malloc(sizeof(femMesh*));
+    *(backup) = *(theGeometry->theElements);
+    backup->nodes = malloc(sizeof(femNodes*));
+    backup->nodes->X = malloc(sizeof(double)*theNodes->nNodes);
+    backup->nodes->Y = malloc(sizeof(double)*theNodes->nNodes);
+    backup->elem = malloc(sizeof(double)*theNodes->nNodes*backup->nLocalNode);
+    memcpy(backup->nodes->X, theNodes->X, sizeof(double)*theNodes->nNodes);
+    memcpy(backup->nodes->Y, theNodes->Y, sizeof(double)*theNodes->nNodes);
+    memcpy(backup->elem, theGeometry->theElements->elem, sizeof(double)*backup->nLocalNode*theNodes->nNodes);
+    double *zeros = malloc(sizeof(double)*n);
     
 //
-//  -2- Deformation du maillage pour le plot final
+//  -2.b- Deformation du maillage pour le plot final
 //      Creation du champ de la norme du deplacement
 //
     
-    femNodes *theNodes = theGeometry->theNodes;
-    double deformationFactor = 5;
+    double deformationFactor = 10;
     double *normDisplacement = malloc(theNodes->nNodes * sizeof(double));
     
-    for (int i=0; i<n; i++){
+    for (int i=0; i<n; i++) {
         theNodes->X[i] += theSoluce[2*i+0]*deformationFactor;
         theNodes->Y[i] += theSoluce[2*i+1]*deformationFactor;
         normDisplacement[i] = sqrt(theSoluce[2*i+0]*theSoluce[2*i+0] + 
@@ -58,20 +73,28 @@ int main(void)
 
 
 //
-//      2.b - Creation du champ de contraintes
+//  2.c - Creation du champ de contraintes
 //
     
-    double StressFactor = 5;
+    double stressFactor = 1e3;
     double *stress = malloc(theNodes->nNodes * sizeof(double));
-    
-    for (int i=0; i<n; i++){
-        stress[i] = 0;
+    double *field = malloc(theNodes->nNodes * sizeof(double) * 4);
+    n = n*4;
+    femFieldRead(&n, 1, field,"../../Project/data/Stress.txt", 4);
+    n = n/4;
+
+    for (int i=0; i < n; i++) {
+        for (int j = 0; j < 4; j++) {
+            stress[i] += pow(field[i*4 + j] * stressFactor, 2);
+        }
+        stress[i] = sqrt(stress[i]);
     }
+    free(field);
     double stressMin = femMin(stress, n);  
     double stressMax = femMax(stress, n);  
     printf(" ==== Minimum stress          : %14.7e \n",stressMin);
     printf(" ==== Maximum stress          : %14.7e \n",stressMax);
-        
+    
 //
 //  -3- Visualisation 
 //  
@@ -94,9 +117,21 @@ int main(void)
         t = glfwGetTime();  
         if (glfwGetKey(window,'D') == GLFW_PRESS) { mode = 0;}
         if (glfwGetKey(window,'V') == GLFW_PRESS) { mode = 1;}
+        if (glfwGetKey(window,'C') == GLFW_PRESS) { mode = 2;}
+        if (glfwGetKey(window,'B') == GLFW_PRESS) { mode = 3;}
         if (glfwGetKey(window,'N') == GLFW_PRESS && freezingButton == FALSE) { domain++; freezingButton = TRUE; told = t;}
         
         if (t-told > 0.5) {freezingButton = FALSE; }
+        if (mode == 3) {
+            glfemPlotField(backup, zeros);
+            glfemPlotMesh(backup); 
+            sprintf(theMessage, "Number of elements : %d ",theGeometry->theElements->nElem);
+            glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
+        if (mode == 2) {
+            glfemPlotField(theGeometry->theElements, stress);
+            glfemPlotMesh(theGeometry->theElements); 
+            sprintf(theMessage, "Number of elements : %d ",theGeometry->theElements->nElem);
+            glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
         if (mode == 1) {
             glfemPlotField(theGeometry->theElements, normDisplacement);
             glfemPlotMesh(theGeometry->theElements); 
@@ -118,6 +153,9 @@ int main(void)
     free(normDisplacement);
     femElasticityFree(theProblem) ; 
     geoFree();
+    free(stress);
+    free(zeros);
+    freeBackup(backup);
     glfwTerminate(); 
     
     exit(EXIT_SUCCESS);
