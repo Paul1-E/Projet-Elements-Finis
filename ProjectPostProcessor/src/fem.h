@@ -131,7 +131,7 @@ void                femElasticityWrite(femProblem *theProbconst, const char *fil
 femProblem*         femElasticityRead(femGeo* theGeometry, const char *filename);
 
 void                femFieldWrite(int size, int shift, double* value, const char *filename);
-int                 femFieldRead(int* size, int shift, double* value, const char *filename);
+int                 femFieldRead(int* size, int shift, double* value, const char *filename, int line);
 
 femIntegration*     femIntegrationCreate(int n, femElementType type);
 void                femIntegrationFree(femIntegration *theRule);
@@ -158,5 +158,6 @@ void                femErrorScan(int test, int line, char *file);
 void                femErrorGmsh(int test, int line, char *file);
 void                femWarning(char *text, int line, char *file);
 
+void                freeBackup(femMesh *backup);
 
 #endif

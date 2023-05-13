@@ -174,7 +174,7 @@ double *femElasticitySolve(femProblem *theProblem)
 }
 
 
-double **femFindStress(femProblem *theProblem, double *displacements) {
+double *femFindStress(femProblem *theProblem, double *displacements) {
 
     femDiscrete    *theSpace = theProblem->space;
     femGeo         *theGeometry = theProblem->geometry;
@@ -186,7 +186,7 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
     double c   = theProblem->C; 
     int nLocal = theMesh->nLocalNode;
 
-    double **sigma = malloc(sizeof(double*)*theNodes->nNodes);
+    double *sigma = malloc(sizeof(double)*theNodes->nNodes*4);
     double *U = &displacements[0];
     double *V = &displacements[1];
 
@@ -197,7 +197,6 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
 
         int *nextElem = malloc(sizeof(int)*10);  // Array containing index of the first node of the elements which have a common node with current node i
         double *epsilon = malloc(sizeof(double)*4);
-        double *sigmaLoc = malloc(sizeof(double)*4);  // Stress of the current node
         int idxNext = 0;
         int c;
 
@@ -249,12 +248,11 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
             }
         }
 
-        sigmaLoc[0] = a*epsilon[0] + b*epsilon[1];
-        sigmaLoc[1] = a*epsilon[1] + b*epsilon[0];
-        sigmaLoc[2] = 2*c*epsilon[2];
-        sigmaLoc[3] = 2*c*epsilon[3];
-        sigma[i] = sigmaLoc;
-
+        sigma[i*4] = a*epsilon[0] + b*epsilon[1];
+        sigma[i*4 + 1] = a*epsilon[1] + b*epsilon[0];
+        sigma[i*4 + 2] = 2*c*epsilon[2];
+        sigma[i*4 + 3] = 2*c*epsilon[3];
+        
         free(epsilon);
         free(nextElem);
     }
@@ -262,10 +260,9 @@ double **femFindStress(femProblem *theProblem, double *displacements) {
 }
 
 
-void femPrintStress(femProblem *theProblem, double **stress) {
-    int nNodes = theProblem->geometry->theNodes->nNodes;
+void femPrintStress(double *stress, int nNodes) {
     printf("\n ----------------- Stresses -----------------\n\n");
-    for (int i = 0; i < nNodes; i++) {
-        printf("%d : xx %14.7e, xy %14.7e, yx %14.7e, yy %14.7e\n", i, stress[i][0], stress[i][2], stress[i][3], stress[i][1]);
+    for (int i = 0; i < nNodes*4; i+=4) {
+        printf("%d : xx %14.7e, xy %14.7e, yx %14.7e, yy %14.7e\n", i/4, stress[i], stress[i + 2], stress[i + 3], stress[i + 1]);
     }
 }

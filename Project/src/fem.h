@@ -157,8 +157,8 @@ void                femErrorScan(int test, int line, char *file);
 void                femErrorGmsh(int test, int line, char *file);
 void                femWarning(char *text, int line, char *file);
 
-double**            femFindStress(femProblem* theProblem, double* displacements);
-void                femPrintStress(femProblem *theProblem, double **stress);
+double*             femFindStress(femProblem* theProblem, double* displacements);
+void                femPrintStress(double *stress, int nNodes);
 
 
 #endif

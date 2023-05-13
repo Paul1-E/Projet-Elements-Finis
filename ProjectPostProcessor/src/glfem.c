@@ -341,7 +341,6 @@ void glfemPlotField(femMesh *theMesh, double *u)
             uLoc[j] = glScale(uMin,uMax,u[nodes[j]]); }              
         glfemDrawColorElement(xLoc,yLoc,uLoc,nLocalNode); }
     glColor3f(0.0, 0.0, 0.0);
-    glfemPlotMesh(theMesh);
 }
 
 void glfemPlotMesh(femMesh *theMesh)
