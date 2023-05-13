@@ -817,7 +817,7 @@ void femFieldWrite(int size, int shift, double* value, const char *filename) {
     fclose(file);
 }
 
-int femFieldRead(int* size, int shift, double* value, const char *filename) {
+int femFieldRead(int* size, int shift, double* value, const char *filename, int line) {
     FILE* file = fopen(filename,"r");
 
 
@@ -885,4 +885,13 @@ void femWarning(char *text, int line, char *file)
     printf("\n-------------------------------------------------------------------------------- ");
     printf("\n  Warning in %s at line %d : \n  %s\n", file, line, text);
     printf("--------------------------------------------------------------------- Yek Yek !! \n\n");                                              
+}
+
+
+void freeBackup(femMesh *backup) {
+    free(backup->nodes->X);
+    free(backup->nodes->Y);
+    free(backup->elem);
+    free(backup->nodes);
+    free(backup);
 }
