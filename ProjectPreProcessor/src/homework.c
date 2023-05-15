@@ -34,8 +34,8 @@ void geoMeshGenerate() {
 
     // Surface 1
     idPt0= gmshModelOccAddPoint(0.0, 0.0, 0.0,      -1,-1,&ierr);
-    idPt1= gmshModelOccAddPoint(dw, 0.0, 0.0,     -1,-1,&ierr);
-    idPt2= gmshModelOccAddPoint(-1*dw, 11*dh, 0.0,     -1,-1,&ierr);
+    idPt1= gmshModelOccAddPoint(0.8*dw, 0.0, 0.0,     -1,-1,&ierr);
+    idPt2= gmshModelOccAddPoint(-1.2*dw, 11*dh, 0.0,     -1,-1,&ierr);
     idPt3= gmshModelOccAddPoint(-2*dw, 11*dh, 0.0,          -1,-1,&ierr);
 
     idSeg0 = gmshModelOccAddLine(idPt0, idPt1, -1,&ierr);
@@ -49,7 +49,7 @@ void geoMeshGenerate() {
     int surface1[] = {2, idSurface1};
 
     // Surface 2
-    idPt0= gmshModelOccAddPoint(-1.5*dw, 9*dh, 0.0,      -1,-1,&ierr);
+    idPt0= gmshModelOccAddPoint(-1.5*dw, 9.3*dh, 0.0,      -1,-1,&ierr);
     idPt1= gmshModelOccAddPoint(8.5*dw, 11.5*dh, 0.0,     -1,-1,&ierr);
     idPt2= gmshModelOccAddPoint(8*dw, 12*dh, 0.0,     -1,-1,&ierr);
     idPt3= gmshModelOccAddPoint(-1.5*dw, 10*dh, 0.0,          -1,-1,&ierr);
@@ -65,8 +65,8 @@ void geoMeshGenerate() {
     int surface2[] = {2, idSurface2};
 
     // Surface 3
-    idPt0= gmshModelOccAddPoint(0.0, 0.0, 0.0,      -1,-1,&ierr);
-    idPt1= gmshModelOccAddPoint(dw, 0.0, 0.0,     -1,-1,&ierr);
+    idPt0= gmshModelOccAddPoint(0.0, 0.2*dh, 0.0,      -1,-1,&ierr);
+    idPt1= gmshModelOccAddPoint(0.8*dw, 0.0, 0.0,     -1,-1,&ierr);
     idPt2= gmshModelOccAddPoint(9*dw, 9*dh, 0.0,     -1,-1,&ierr);
     idPt3= gmshModelOccAddPoint(9*dw, 10*dh, 0.0,          -1,-1,&ierr);
 
@@ -98,8 +98,8 @@ void geoMeshGenerate() {
     int surface4[] = {2, idSurface4};
 
     // Surface 5
-    idPt0= gmshModelOccAddPoint(-8*dw, 2*dh, 0.0,      -1,-1,&ierr);
-    idPt1= gmshModelOccAddPoint(-1*dw, 10*dh, 0.0,     -1,-1,&ierr);
+    idPt0= gmshModelOccAddPoint(-8*dw, 2.2*dh, 0.0,      -1,-1,&ierr);
+    idPt1= gmshModelOccAddPoint(-1.2*dw, 10*dh, 0.0,     -1,-1,&ierr);
     idPt2= gmshModelOccAddPoint(-1.5*dw, 10.5*dh, 0.0,     -1,-1,&ierr);
     idPt3= gmshModelOccAddPoint(-8*dw, 3*dh, 0.0,          -1,-1,&ierr);
 
@@ -116,7 +116,7 @@ void geoMeshGenerate() {
     // Surface 6
     idPt0= gmshModelOccAddPoint(-8*dw, 2*dh, 0.0,      -1,-1,&ierr);
     idPt1= gmshModelOccAddPoint(0.0, 0.0, 0.0,     -1,-1,&ierr);
-    idPt2= gmshModelOccAddPoint(0.0, dh, 0.0,     -1,-1,&ierr);
+    idPt2= gmshModelOccAddPoint(0.0, 0.8*dh, 0.0,     -1,-1,&ierr);
     idPt3= gmshModelOccAddPoint(-8*dw, 2.5*dh, 0.0,          -1,-1,&ierr);
 
     idSeg0 = gmshModelOccAddLine(idPt0, idPt1, -1,&ierr);

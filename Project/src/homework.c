@@ -159,13 +159,56 @@ double *femElasticitySolve(femProblem *theProblem)
                     A[mapY[i]][mapY[j]] += (dphidy[i] * a * dphidy[j] + 
                                             dphidx[i] * c * dphidx[j]) * jac * weight; }}
              for (i = 0; i < theSpace->n; i++) {
-                B[mapY[i]] -= phi[i] * g * rho * jac * weight; }}} 
-  
+                B[mapY[i]] -= phi[i] * g * rho * jac * weight; }     
+        }        
+    }
+
+    // Application des conditions frontières - NEUMANN X-Y (le reste est à venir) 
+    for (int i = 0; i < theProblem->nBoundaryConditions; i++) {
+
+        femBoundaryCondition* cnd = theProblem->conditions[i];
+        femMesh * bndMesh = cnd->domain->mesh;
+        femBoundaryType bndType = cnd->type;
+        double * X = bndMesh->nodes->X;
+        double * Y = bndMesh->nodes->Y;
+        int * bndElem = cnd->domain->elem;
+        int nElem = cnd->domain->nElem;
+
+        int node0, node1;
+
+        if (cnd->type == NEUMANN_X || cnd->type == NEUMANN_Y) {
+
+            for (int j = 0; j < cnd->domain->nElem; j++){
+
+                node0 = bndMesh->elem[2 * bndElem[j]];
+                node1 = bndMesh->elem[2 * bndElem[j] + 1];
+                
+                double jac = 0.5 * sqrt( (X[node0] - X[node1]) *  (X[node0] - X[node1]) +
+                                    (Y[node0] - Y[node1]) * (Y[node0] - Y[node1]));
+
+                if (cnd->type == NEUMANN_X) {
+                    B[2 * node0] += jac * cnd->value;
+                    B[2 * node1] += jac * cnd->value;
+                }
+        
+                if (cnd->type == NEUMANN_Y) {
+                    B[2 * node0 + 1] += jac * cnd->value;
+                    B[2 * node1 + 1] += jac * cnd->value;
+                }
+            }
+        }
+    
+        
+    }
+
     int *theConstrainedNodes = theProblem->constrainedNodes;     
     for (int i=0; i < theSystem->size; i++) {
         if (theConstrainedNodes[i] != -1) {
             double value = theProblem->conditions[theConstrainedNodes[i]]->value;
-            femFullSystemConstrain(theSystem,i,value); }}
+            femBoundaryType constraintype = theProblem->conditions[theConstrainedNodes[i]]->type;
+            if (constraintype == DIRICHLET_X || constraintype == DIRICHLET_Y) {
+            femFullSystemConstrain(theSystem,i,value); }
+            }}
 
     /*int band = femMeshComputeBand(theMesh);
     return femBandSystemEliminate(theSystem, band);*/

@@ -569,7 +569,13 @@ void femElasticityPrint(femProblem *theProblem)
           double value = theCondition->value;
           printf("  %20s :",theCondition->domain->name);
           if (theCondition->type==DIRICHLET_X)  printf(" imposing %9.2e as the horizontal displacement  \n",value);
-          if (theCondition->type==DIRICHLET_Y)  printf(" imposing %9.2e as the vertical displacement  \n",value); }
+          if (theCondition->type==DIRICHLET_Y)  printf(" imposing %9.2e as the vertical displacement  \n",value);
+          if (theCondition->type==DIRICHLET_N)  printf(" imposing %9.2e as the normal displacement  \n",value);
+          if (theCondition->type==DIRICHLET_T)  printf(" imposing %9.2e as the tangent displacement  \n",value);
+          if (theCondition->type==NEUMANN_X)  printf(" imposing %9.2e as the horizontal pression  \n",value); 
+          if (theCondition->type==NEUMANN_Y)  printf(" imposing %9.2e as the vertical pression  \n",value);
+          if (theCondition->type==NEUMANN_N)  printf(" imposing %9.2e as the normal pression  \n",value); 
+          if (theCondition->type==NEUMANN_T)  printf(" imposing %9.2e as the tangent pression  \n",value); }
     printf(" ======================================================================================= \n\n");
 }
 
@@ -596,6 +602,12 @@ void femElasticityWrite(femProblem *theProblem, const char *filename)
         switch (theCondition->type) {
             case DIRICHLET_X : fprintf(file," Dirichlet-X        = %14.7e ",value); break;
             case DIRICHLET_Y : fprintf(file," Dirichlet-Y        = %14.7e ",value); break;
+            case DIRICHLET_N : fprintf(file," Dirichlet-N        = %14.7e ",value); break;
+            case DIRICHLET_T : fprintf(file," Dirichlet-T        = %14.7e ",value); break;
+            case NEUMANN_X : fprintf(file," Neumann-X        = %14.7e ",value); break;
+            case NEUMANN_Y : fprintf(file," Neumann-Y        = %14.7e ",value); break;
+            case NEUMANN_N : fprintf(file," Neumann-N        = %14.7e ",value); break;
+            case NEUMANN_T : fprintf(file," Neumann-T        = %14.7e ",value); break;
             default :          fprintf(file," Undefined          = %14.7e ",value); break; }
 
         fprintf(file,": %s\n",theCondition->domain->name); }

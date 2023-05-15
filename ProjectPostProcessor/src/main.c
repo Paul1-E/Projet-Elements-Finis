@@ -54,7 +54,7 @@ int main(void)
 //      Creation du champ de la norme du deplacement
 //
     
-    double deformationFactor = 10;
+    double deformationFactor = 1e3;
     double *normDisplacement = malloc(n * sizeof(double));
     
     for (int i=0; i<n; i++) {
