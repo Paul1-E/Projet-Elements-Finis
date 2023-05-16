@@ -226,10 +226,20 @@ double *femElasticitySolve(femProblem *theProblem)
 
             }
 
-            // petit check
-            // for (int k = 0; k < nElem + 1; k++ ) {
-            //     printf("normale du noeud %d = (%f ; %f)\n", k, normales[2 * k], normales[2 * k + 1]);   
-            //     printf("tangente du noeud %d = (%f ; %f)\n", k, tangentes[2 * k], tangentes[2 * k + 1]);}   
+            // Normalisation des normales et tangentes :
+            for (int j = 0; j < nElem + 1; j++){
+                double norm = sqrt( tangentes[2*j]*tangentes[2*j] + tangentes[2*j+1]*tangentes[2*j+1]);
+                tangentes[2*j] /= norm;
+                tangentes[2*j+1] /= norm;
+                norm = sqrt( normales[2*j]*normales[2*j] + normales[2*j+1]*normales[2*j+1]);
+                normales[2*j] /= norm;
+                normales[2*j+1] /= norm;
+            }
+
+            //petit check
+            for (int k = 0; k < nElem + 1; k++ ) {
+                printf("normale du noeud %d = (%f ; %f)\n", k, normales[2 * k], normales[2 * k + 1]);   
+                printf("tangente du noeud %d = (%f ; %f)\n", k, tangentes[2 * k], tangentes[2 * k + 1]);}   
 
             for (int j = 0; j < nElem + 1; j++){
                 if (j == nElem) {

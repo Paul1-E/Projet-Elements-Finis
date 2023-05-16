@@ -57,8 +57,8 @@ int main(void)
     double g   = 9.81;
     femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRAIN);
     //femElasticityAddBoundaryCondition(theProblem,"Top",NEUMANN_Y,-100000);
-    femElasticityAddBoundaryCondition(theProblem,"Left",DIRICHLET_Y,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"Right",DIRICHLET_X,0.0);
+    femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_N,0.0);
+    femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_T,0.0);
 
     femElasticityPrint(theProblem);
     femElasticityWrite(theProblem,"../../Project/data/problem.txt");
