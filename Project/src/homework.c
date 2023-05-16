@@ -174,11 +174,12 @@ double *femElasticitySolve(femProblem *theProblem)
         int * bndElem = cnd->domain->elem;
         int nElem = cnd->domain->nElem;
 
+
         int node0, node1;
 
         if (cnd->type == NEUMANN_X || cnd->type == NEUMANN_Y) {
 
-            for (int j = 0; j < cnd->domain->nElem; j++){
+            for (int j = 0; j < nElem; j++){
 
                 node0 = bndMesh->elem[2 * bndElem[j]];
                 node1 = bndMesh->elem[2 * bndElem[j] + 1];
@@ -198,10 +199,65 @@ double *femElasticitySolve(femProblem *theProblem)
             }
         }
     
-        
-    }
+        else if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) {
 
-    int *theConstrainedNodes = theProblem->constrainedNodes;     
+            // nbre de noeuds = nbre de segments + 1
+            // mais en un noeud, normale et tangent = vecteur de taille 2
+            double *normales = calloc(sizeof(double), 2 * (bndMesh->nElem + 1) ); 
+            double *tangentes = calloc(sizeof(double),  2 * (bndMesh->nElem + 1) ); 
+
+            for (int j = 0; j < nElem; j++){
+                node0 = bndMesh->elem[2 * bndElem[j]];
+                node1 = bndMesh->elem[2 * bndElem[j] + 1];
+
+                // contributions au noeud gauche
+                tangentes[2 * j] += X[node1] - X[node0];
+                tangentes[2 * j + 1] += Y[node1] - Y[node0];
+
+                normales[2 * j] += - Y[node1] + Y[node0];
+                normales[2 * j + 1] += X[node1] - X[node0];
+
+                // contributions au noeud droite
+                tangentes[2 * (j+1)] += X[node1] - X[node0];
+                tangentes[2 * (j+1) + 1] += Y[node1] - Y[node0];
+
+                normales[2 * (j+1)] += - Y[node1] + Y[node0];
+                normales[2 * (j+1) + 1] += X[node1] - X[node0];
+
+            }
+
+            // petit check
+            // for (int k = 0; k < nElem + 1; k++ ) {
+            //     printf("normale du noeud %d = (%f ; %f)\n", k, normales[2 * k], normales[2 * k + 1]);   
+            //     printf("tangente du noeud %d = (%f ; %f)\n", k, tangentes[2 * k], tangentes[2 * k + 1]);}   
+
+            for (int j = 0; j < nElem + 1; j++){
+                if (j == nElem) {
+                    node0 = bndMesh->elem[2 * bndElem[j-1] + 1];
+                }
+                else {node0 = bndMesh->elem[2 * bndElem[j]];}
+                
+                if (cnd->type == DIRICHLET_N) {
+                    femFullSystemConstrain_norm_tan(theSystem, 2 * node0, cnd->value, 
+                                                    normales[2 * j], normales[2*j + 1], 1);
+                    // To check :
+                    // printf("B[%d] = %f \n", 2*node0 +1, B[2*node0+1]);
+                    // printf("A = [\n");
+                    // for (int l = 0; l < theSystem->size; l++) {
+                    //     printf("%f \t", A[2*node0+1][l]);
+                    // }
+                    // printf("\n]\n");
+                }
+
+                if (cnd->type == DIRICHLET_T) {
+                    femFullSystemConstrain_norm_tan(theSystem, 2 * node0, cnd->value, 
+                                                    tangentes[2 * j], tangentes[2*j + 1], 0);
+                }
+            }
+        }  
+    }  
+
+    int *theConstrainedNodes = theProblem->constrainedNodes; // NB : ici nodes ne correspond pas à un noeud, mais à la composante x ou y
     for (int i=0; i < theSystem->size; i++) {
         if (theConstrainedNodes[i] != -1) {
             double value = theProblem->conditions[theConstrainedNodes[i]]->value;

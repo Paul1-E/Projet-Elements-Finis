@@ -431,7 +431,20 @@ double* femFullSystemEliminate(femFullSystem *mySystem)
         if ( fabs(A[k][k]) <= 1e-16 ) {
             printf("Pivot index %d  ",k);
             printf("Pivot value %e  ",A[k][k]);
-            Error("Cannot eliminate with such a pivot"); }
+
+            // double Atmp;
+            // for (int l = 0; l < size; l++) { //interversion des deux lignes
+            //     Atmp = A[k+1][l];
+            //     A[k+1][l] = A[k][l];
+            //     A[k][l] = Atmp;
+            // }
+            // double Btmp = B[k+1];
+            // B[k+1] = B[k];
+            // B[k] = Btmp;
+
+            Error("Cannot eliminate with such a pivot");
+
+         }
         for (i = k+1 ; i <  size; i++) {
             factor = A[i][k] / A[k][k];
             for (j = k+1 ; j < size; j++) 
@@ -468,6 +481,24 @@ void  femFullSystemConstrain(femFullSystem *mySystem,
     
     A[myNode][myNode] = 1;
     B[myNode] = myValue;
+}
+
+void  femFullSystemConstrain_norm_tan(femFullSystem *mySystem, 
+                             int myNode, double myValue, double nx, double ny, int shift) 
+{
+    double  **A, *B;
+    int     i, size;
+    
+    A    = mySystem->A;
+    B    = mySystem->B;
+    size = mySystem->size;
+    
+    for (i=0; i < size; i++) 
+        A[myNode+shift][i] = 0; 
+    
+    A[myNode+shift][myNode] = nx;
+    A[myNode+shift][myNode + 1] = ny;
+    B[myNode+shift] = myValue;
 }
 
 
@@ -665,11 +696,19 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
             if (strncasecmp(theArgument,"Dirichlet-X",19) == 0)
                 typeCondition = DIRICHLET_X;
             if (strncasecmp(theArgument,"Dirichlet-Y",19) == 0)
-                typeCondition = DIRICHLET_Y;                
+                typeCondition = DIRICHLET_Y;       
+            if (strncasecmp(theArgument,"Dirichlet-N",19) == 0)
+                typeCondition = DIRICHLET_N;
+            if (strncasecmp(theArgument,"Dirichlet-T",19) == 0)
+                typeCondition = DIRICHLET_T;          
             if (strncasecmp(theArgument,"Neumann-X",19) == 0)
                 typeCondition = NEUMANN_X;
             if (strncasecmp(theArgument,"Neumann-Y",19) == 0)
-                typeCondition = NEUMANN_Y;                
+                typeCondition = NEUMANN_Y; 
+            if (strncasecmp(theArgument,"Neumann-N",19) == 0)
+                typeCondition = NEUMANN_N;
+            if (strncasecmp(theArgument,"Neumann-T",19) == 0)
+                typeCondition = NEUMANN_T;                     
             femElasticityAddBoundaryCondition(theProblem,theDomain,typeCondition,value); }
         ErrorScan(fscanf(file,"\n")); }
  

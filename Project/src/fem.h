@@ -149,6 +149,7 @@ void                femFullSystemInit(femFullSystem* mySystem);
 void                femFullSystemAlloc(femFullSystem* mySystem, int size);
 double*             femFullSystemEliminate(femFullSystem* mySystem);
 void                femFullSystemConstrain(femFullSystem* mySystem, int myNode, double value);
+void                femFullSystemConstrain_norm_tan(femFullSystem *mySystem, int myNode, double myValue, double nx, double ny, int shift); 
 
 double              femMin(double *x, int n);
 double              femMax(double *x, int n);
