@@ -215,7 +215,8 @@ double *femElasticitySolve(femProblem *theProblem)
                 cnd->domain->normales = calloc(sizeof(double), 2 * (bndMesh->nElem + 1) ); 
                 double *normales = cnd->domain->normales;
                 cnd->domain->tangentes = calloc(sizeof(double),  2 * (bndMesh->nElem + 1) ); 
-                double *tangentes = cnd->domain->normales;
+                double *tangentes = cnd->domain->tangentes;
+                int j = 0;
 
                 // Calcul des normales et tangentes
                 for (int j = 0; j < nElem; j++){
@@ -233,6 +234,7 @@ double *femElasticitySolve(femProblem *theProblem)
                     tangentes[2 * (j+1) + 1] += Y[node1] - Y[node0];
                     normales[2 * (j+1)] += - Y[node1] + Y[node0];
                     normales[2 * (j+1) + 1] += X[node1] - X[node0];
+
 
                 }
 
@@ -284,8 +286,8 @@ double *femElasticitySolve(femProblem *theProblem)
 
 
         // Application des différentes contraintes
-
         if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) {
+          
             for (int j = 0; j < nElem + 1; j++){
                 if (j == nElem) {
                     node0 = bndMesh->elem[2 * bndElem[j-1] + 1];
@@ -293,10 +295,12 @@ double *femElasticitySolve(femProblem *theProblem)
                 else {node0 = bndMesh->elem[2 * bndElem[j]];}       
                 int shift = (cnd->type == DIRICHLET_N) ? 0 : 1;
                 femFullSystemConstrain(theSystem, 2 * node0 + shift,  cnd->value);
+
             }
         }
 
-        if (cnd->type == NEUMANN_X || cnd->type == NEUMANN_Y) {
+        if (cnd->type == NEUMANN_X || cnd->type == NEUMANN_Y ||
+            cnd->type == NEUMANN_N || cnd->type == NEUMANN_T) {
             for (int j = 0; j < nElem; j++){
                 node0 = bndMesh->elem[2 * bndElem[j]];
                 node1 = bndMesh->elem[2 * bndElem[j] + 1];                
@@ -316,7 +320,6 @@ double *femElasticitySolve(femProblem *theProblem)
                     B[2 * node0 + 1] += jac * cnd->value *  n_or_t[2 * j + 1];
                     B[2 * node1] += jac * cnd->value *      n_or_t[2 * (j+1)];
                     B[2 * node1 + 1] += jac * cnd->value *  n_or_t[2*(j+1) + 1] ;
-  
                 }
 
             }
@@ -339,7 +342,9 @@ double *femElasticitySolve(femProblem *theProblem)
     // CONDITIONS DIRICHLET N-T : On convertit les équations (N,T) en (U,V)
     for (int i = 0; i < theProblem->nBoundaryConditions; i++) {
         femBoundaryCondition* cnd = theProblem->conditions[i] ;
-        if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) {
+        if ( (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) &&
+                (cnd->domain->n_t_determined == 1) ) { // si on a pas encore convertis de N-T en U-V
+            cnd->domain->n_t_determined == 0;
             int nElem = cnd->domain->nElem;
             femMesh * bndMesh = cnd->domain->mesh;
             int * bndElem = cnd->domain->elem;
