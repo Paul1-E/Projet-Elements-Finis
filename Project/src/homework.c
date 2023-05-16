@@ -104,6 +104,7 @@ double *femElasticitySolve(femProblem *theProblem)
     femNodes       *theNodes = theGeometry->theNodes;
     femMesh        *theMesh = theGeometry->theElements;
     
+    int iCase = theProblem->planarStrainStress;
     int nLocal = theMesh->nLocalNode;
 
     double x[nLocal],y[nLocal],phi[nLocal],dphidxsi[nLocal],dphideta[nLocal],dphidx[nLocal],dphidy[nLocal];
@@ -147,7 +148,32 @@ double *femElasticitySolve(femProblem *theProblem)
             
             for (i = 0; i < theSpace->n; i++) {    
                 dphidx[i] = (dphidxsi[i] * dydeta - dphideta[i] * dydxsi) / jac;       
-                dphidy[i] = (dphideta[i] * dxdxsi - dphidxsi[i] * dxdeta) / jac; }            
+                dphidy[i] = (dphideta[i] * dxdxsi - dphidxsi[i] * dxdeta) / jac; }
+
+            //// Assemblage ////
+            // For axisym problems, we consider x --> r and y --> z
+            // Therefore, x > 0, and gravity is G = -g e_z
+            // and r = x[iInteg]
+            if (iCase == AXISYM) { 
+            for (i = 0; i < theSpace->n; i++) { 
+                for(j = 0; j < theSpace->n; j++) {
+                    A[mapX[i]][mapX[j]] += (dphidx[i] * a * dphidx[j] * x[iInteg] + 
+                                            dphidy[i] * c * dphidy[j] * x[iInteg] +
+                                            phi[i] * (b * dphidx[j] + a * phi[j]/x[iInteg]) +
+                                            dphidx[i] * b * phi[j]) * jac * weight;                                                                                            
+                    A[mapX[i]][mapY[j]] += (dphidx[i] * b * dphidy[j] * x[iInteg] + 
+                                            dphidy[i] * c * dphidx[j] * x[iInteg] + 
+                                            phi[i] * b * dphidy[j]) * jac * weight;                                                                                           
+                    A[mapY[i]][mapX[j]] += (dphidy[i] * b * dphidx[j] * x[iInteg] + 
+                                            dphidx[i] * c * dphidy[j] * x[iInteg] +
+                                            dphidy[i] * b * phi[j]) * jac * weight;                                                                                             
+                    A[mapY[i]][mapY[j]] += (dphidy[i] * a * dphidy[j] * x[iInteg] + 
+                                            dphidx[i] * c * dphidx[j] * x[iInteg]) * jac * weight; }}
+             for (i = 0; i < theSpace->n; i++) {
+                B[mapY[i]] -= phi[i] * x[iInteg] * g * rho * jac * weight; }
+            }
+
+            else {         
             for (i = 0; i < theSpace->n; i++) { 
                 for(j = 0; j < theSpace->n; j++) {
                     A[mapX[i]][mapX[j]] += (dphidx[i] * a * dphidx[j] + 
@@ -159,7 +185,7 @@ double *femElasticitySolve(femProblem *theProblem)
                     A[mapY[i]][mapY[j]] += (dphidy[i] * a * dphidy[j] + 
                                             dphidx[i] * c * dphidx[j]) * jac * weight; }}
              for (i = 0; i < theSpace->n; i++) {
-                B[mapY[i]] -= phi[i] * g * rho * jac * weight; }     
+                B[mapY[i]] -= phi[i] * g * rho * jac * weight; }}   
         }        
     }
 
@@ -237,9 +263,9 @@ double *femElasticitySolve(femProblem *theProblem)
             }
 
             //petit check
-            for (int k = 0; k < nElem + 1; k++ ) {
-                printf("normale du noeud %d = (%f ; %f)\n", k, normales[2 * k], normales[2 * k + 1]);   
-                printf("tangente du noeud %d = (%f ; %f)\n", k, tangentes[2 * k], tangentes[2 * k + 1]);}   
+            // for (int k = 0; k < nElem + 1; k++ ) {
+            //     printf("normale du noeud %d = (%f ; %f)\n", k, normales[2 * k], normales[2 * k + 1]);   
+            //     printf("tangente du noeud %d = (%f ; %f)\n", k, tangentes[2 * k], tangentes[2 * k + 1]);}   
 
             for (int j = 0; j < nElem + 1; j++){
                 if (j == nElem) {
