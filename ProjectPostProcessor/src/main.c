@@ -29,8 +29,8 @@ int main(void)
 
     femGeo* theGeometry = geoGetGeometry();   
     geoMeshRead("../../Project/data/mesh.txt");
-    
     femProblem* theProblem = femElasticityRead(theGeometry,"../../Project/data/problem.txt");
+
     double *theSoluce = theProblem->system->B;
     int n = theGeometry->theNodes->nNodes;
 

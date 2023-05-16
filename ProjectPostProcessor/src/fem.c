@@ -269,6 +269,13 @@ void geoMeshRead(const char *filename)
    FILE* file = fopen(filename,"r");
    
    int trash, *elem;
+
+    theGeometry.geoSize = geoSizeDefault;
+    theGeometry.theNodes = NULL;
+    theGeometry.theElements = NULL;
+    theGeometry.theEdges = NULL;
+    theGeometry.nDomains = 0;
+    theGeometry.theDomains = NULL;
    
    femNodes *theNodes = malloc(sizeof(femNodes));
    theGeometry.theNodes = theNodes;
@@ -768,7 +775,7 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
     double value;
     double typeCondition;
     
-    while (feof(file) != TRUE) {
+    while (!feof(file)) {
         ErrorScan(fscanf(file,"%19[^\n]s \n",(char *)&theLine));
         if (strncasecmp(theLine,"Type of problem     ",19) == 0) {
             ErrorScan(fscanf(file,":  %[^\n]s \n",(char *)&theArgument));
@@ -788,17 +795,26 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
             ErrorScan(fscanf(file,":  %le\n",&theProblem->g)); }
         if (strncasecmp(theLine,"Boundary condition  ",19) == 0) {
             ErrorScan(fscanf(file,":  %19s = %le : %[^\n]s\n",(char *)&theArgument,&value,(char *)&theDomain));
+
             if (strncasecmp(theArgument,"Dirichlet-X",19) == 0)
                 typeCondition = DIRICHLET_X;
             if (strncasecmp(theArgument,"Dirichlet-Y",19) == 0)
-                typeCondition = DIRICHLET_Y;                
+                typeCondition = DIRICHLET_Y;       
+            if (strncasecmp(theArgument,"Dirichlet-N",19) == 0)
+                typeCondition = DIRICHLET_N;
+            if (strncasecmp(theArgument,"Dirichlet-T",19) == 0)
+                typeCondition = DIRICHLET_T;          
             if (strncasecmp(theArgument,"Neumann-X",19) == 0)
                 typeCondition = NEUMANN_X;
             if (strncasecmp(theArgument,"Neumann-Y",19) == 0)
-                typeCondition = NEUMANN_Y;                
+                typeCondition = NEUMANN_Y; 
+            if (strncasecmp(theArgument,"Neumann-N",19) == 0)
+                typeCondition = NEUMANN_N;
+            if (strncasecmp(theArgument,"Neumann-T",19) == 0)
+                typeCondition = NEUMANN_T;                     
             femElasticityAddBoundaryCondition(theProblem,theDomain,typeCondition,value); }
         ErrorScan(fscanf(file,"\n")); }
- 
+
     int iCase = theProblem->planarStrainStress;
     double E = theProblem->E;
     double nu = theProblem->nu;

@@ -49,6 +49,9 @@ typedef struct {
     int nElem;
     int *elem;
     char name[MAXNAME];
+    double *tangentes; // utilisés pour les conditions normales et tangentes
+    double *normales;
+    int n_t_determined; // Utilisé pour voir si normales et tangents ont déjà été calculées sur ce domaine !
 } femDomain;
 
 typedef struct {

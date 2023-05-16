@@ -561,6 +561,8 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
     theBoundary->type = type;
     theProblem->nBoundaryConditions++;
     int size = theProblem->nBoundaryConditions;
+
+    theBoundary->domain->n_t_determined = 0; // Utilisé lors des calculs de tangentes et normales
     
     if (theProblem->conditions == NULL)
         theProblem->conditions = malloc(size*sizeof(femBoundaryCondition*));

@@ -733,10 +733,10 @@ void femElasticityWrite(femProblem *theProblem, const char *filename)
             case DIRICHLET_Y : fprintf(file," Dirichlet-Y        = %14.7e ",value); break;
             case DIRICHLET_N : fprintf(file," Dirichlet-N        = %14.7e ",value); break;
             case DIRICHLET_T : fprintf(file," Dirichlet-T        = %14.7e ",value); break;
-            case NEUMANN_X : fprintf(file," Neumann-X        = %14.7e ",value); break;
-            case NEUMANN_Y : fprintf(file," Neumann-Y        = %14.7e ",value); break;
-            case NEUMANN_N : fprintf(file," Neumann-N        = %14.7e ",value); break;
-            case NEUMANN_T : fprintf(file," Neumann-T        = %14.7e ",value); break;
+            case NEUMANN_X : fprintf(file," Neumann-X          = %14.7e ",value); break;
+            case NEUMANN_Y : fprintf(file," Neumann-Y          = %14.7e ",value); break;
+            case NEUMANN_N : fprintf(file," Neumann-N          = %14.7e ",value); break;
+            case NEUMANN_T : fprintf(file," Neumann-T          = %14.7e ",value); break;
             default :          fprintf(file," Undefined          = %14.7e ",value); break; }
 
         fprintf(file,": %s\n",theCondition->domain->name); }
