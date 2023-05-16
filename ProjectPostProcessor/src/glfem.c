@@ -343,6 +343,25 @@ void glfemPlotField(femMesh *theMesh, double *u)
     glColor3f(0.0, 0.0, 0.0);
 }
 
+void glfemPlotNumbers(femMesh *theMesh)
+{
+    femNodes *theNodes = theMesh->nodes;
+    int i,j,*nodes;
+    float  xLoc[4];
+    float  yLoc[4];
+    double uLoc[4];
+    int nLocalNode = theMesh->nLocalNode;
+    
+    for (i = 0; i < theMesh->nElem; ++i) {
+        nodes = &(theMesh->elem[i*nLocalNode]);
+        for (j=0; j < nLocalNode; ++j) {
+            xLoc[j] = theNodes->X[nodes[j]];
+            yLoc[j] = theNodes->Y[nodes[j]];
+            uLoc[j] = glScale(0,theMesh->nElem,i); }              
+        glfemDrawColorElement(xLoc,yLoc,uLoc,nLocalNode); }
+    glColor3f(0.0, 0.0, 0.0);
+}
+
 
 void glfemPlotMesh(femMesh *theMesh)
 {

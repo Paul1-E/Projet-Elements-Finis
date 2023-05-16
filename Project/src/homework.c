@@ -282,8 +282,7 @@ double *femElasticitySolve(femProblem *theProblem)
                     }
                 }
             }       
-        }  
-
+        }
 
         // Application des différentes contraintes
         if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) {
@@ -295,13 +294,12 @@ double *femElasticitySolve(femProblem *theProblem)
                 else {node0 = bndMesh->elem[2 * bndElem[j]];}       
                 int shift = (cnd->type == DIRICHLET_N) ? 0 : 1;
                 femFullSystemConstrain(theSystem, 2 * node0 + shift,  cnd->value);
-
             }
         }
 
         if (cnd->type == NEUMANN_X || cnd->type == NEUMANN_Y ||
             cnd->type == NEUMANN_N || cnd->type == NEUMANN_T) {
-            for (int j = 0; j < nElem; j++){
+            for (int j = 0; j < nElem; j++) {
                 node0 = bndMesh->elem[2 * bndElem[j]];
                 node1 = bndMesh->elem[2 * bndElem[j] + 1];                
                 double jac = 0.5 * sqrt( (X[node0] - X[node1]) *  (X[node0] - X[node1]) +
@@ -371,7 +369,6 @@ double *femElasticitySolve(femProblem *theProblem)
             }
         }
     }
-
     return B;
 }
 
@@ -388,7 +385,10 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
     double c   = theProblem->C; 
     int nLocal = theMesh->nLocalNode;
 
-    double *sigma = malloc(sizeof(double)*theNodes->nNodes*4);
+    int l = 4;
+    if (theProblem->planarStrainStress == AXISYM) { l = 5; }
+
+    double *sigma = malloc(sizeof(double)*theNodes->nNodes*l);
     double *U = &displacements[0];
     double *V = &displacements[1];
 
@@ -398,7 +398,7 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
     for (int i = 0; i < theNodes->nNodes; i++) {  // For each node, we compute the stress
 
         int *nextElem = malloc(sizeof(int)*10);  // Array containing index of the first node of the elements which have a common node with current node i
-        double *epsilon = malloc(sizeof(double)*4);
+        double *epsilon = malloc(sizeof(double)*l);
         int idxNext = 0;
         int c;
 
@@ -445,15 +445,21 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
 
                 epsilon[0] += dphidx[k] * uNode;
                 epsilon[1] += dphidy[k] * vNode;
-                epsilon[2] += dphidx[k] * vNode;
-                epsilon[3] += dphidy[k] * uNode;
+                epsilon[2] += (dphidx[k] * vNode + dphidy[k] * uNode) / 2;
+                epsilon[3] += (dphidy[k] * uNode + dphidx[k] * vNode) / 2;
             }
         }
+        sigma[i*l] = a*epsilon[0] + b*epsilon[1];
+        sigma[i*l + 1] = a*epsilon[1] + b*epsilon[0];
+        sigma[i*l + 2] = 2*c*epsilon[2];
+        sigma[i*l + 3] = 2*c*epsilon[3];
 
-        sigma[i*4] = a*epsilon[0] + b*epsilon[1];
-        sigma[i*4 + 1] = a*epsilon[1] + b*epsilon[0];
-        sigma[i*4 + 2] = 2*c*epsilon[2];
-        sigma[i*4 + 3] = 2*c*epsilon[3];
+        if (theProblem->planarStrainStress == AXISYM) {
+            epsilon[4] += U[2*theMesh->elem[i]] / theNodes->X[i];
+            sigma[i*l] += b*epsilon[4];
+            sigma[i*l + 1] += b*epsilon[4];
+            sigma[i*l + 4] = b*(epsilon[0] + epsilon[1]) + a*epsilon[4];
+        }
         
         free(epsilon);
         free(nextElem);
@@ -462,9 +468,16 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
 }
 
 
-void femPrintStress(double *stress, int nNodes) {
+void femPrintStress(double *stress, int nNodes, int l) {
     printf("\n ----------------- Stresses -----------------\n\n");
-    for (int i = 0; i < nNodes*4; i+=4) {
-        printf("%d : xx %14.7e, xy %14.7e, yx %14.7e, yy %14.7e\n", i/4, stress[i], stress[i + 2], stress[i + 3], stress[i + 1]);
+    if (l == 4) {
+        for (int i = 0; i < nNodes*l; i+=l) {
+            printf("%d : xx %14.7e, xy %14.7e, yx %14.7e, yy %14.7e\n", i/l, stress[i], stress[i + 2], stress[i + 3], stress[i + 1]);
+        }
+    }
+    else {
+        for (int i = 0; i < nNodes*l; i+=l) {
+            printf("%d : rr %14.7e, zz %14.7e, rz %14.7e, zr %14.7e, qq %14.7e\n", i/l, stress[i], stress[i + 1], stress[i + 2], stress[i + 3], stress[i+4]);
+        }
     }
 }

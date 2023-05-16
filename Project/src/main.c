@@ -24,7 +24,11 @@ int main(void)
     femFieldWrite(theNodes->nNodes,2,&theSoluce[1],"../data/V.txt", 3);
     double *theStress = femFindStress(theProblem, theSoluce);
     //femPrintStress(theStress, theNodes->nNodes);
-    femFieldWrite(theNodes->nNodes*4, 1, theStress, "../data/Stress.txt", 4);
+    int l = 4;
+    if (theProblem->planarStrainStress == AXISYM) {
+        l = 5;
+    }
+    femFieldWrite(theNodes->nNodes*l, 1, theStress, "../data/Stress.txt", l);
     femElasticityFree(theProblem);
     geoFree();
     free(theStress);

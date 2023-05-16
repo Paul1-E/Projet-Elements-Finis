@@ -78,17 +78,19 @@ int main(void)
 //
 //  2.c - Creation du champ de contraintes
 //
-    
+    int l = 4;
+    if (theProblem->planarStrainStress == AXISYM) { l = 5; }
     double stressFactor = 1e3;
-    double *stress = malloc(theNodes->nNodes * sizeof(double));
-    double *field = malloc(theNodes->nNodes * sizeof(double) * 4);
-    n = n*4;
-    femFieldRead(&n, 1, field,"../../Project/data/Stress.txt", 4);
-    n = n/4;
+    double *stress = malloc(n * sizeof(double));
+    double *field = malloc(n * sizeof(double) * l);
+    
+    n = n*l;
+    femFieldRead(&n, 1, field, "../../Project/data/Stress.txt", l);
+    n = n/l;
 
     for (int i=0; i < n; i++) {
-        for (int j = 0; j < 4; j++) {
-            stress[i] += pow(field[i*4 + j] * stressFactor, 2);
+        for (int j = 0; j < l; j++) {
+            stress[i] += pow(field[i*l + j] * stressFactor, 2);
         }
         stress[i] = sqrt(stress[i]);
     }
@@ -149,6 +151,8 @@ int main(void)
             struct timespec time;
             time.tv_nsec = 40e6;
 
+            double field_0 = field[0];
+
             for (int i=0; i<n; i++) {
                 theGeometry->theNodes->X[i] = X[i];
                 theGeometry->theNodes->Y[i] = Y[i];
@@ -174,17 +178,19 @@ int main(void)
                     field[j] += deltaField[j];
                 }
             }
+            field[0] = field_0;
             free(deltaField);
+
             if (mode == 4) mode = 1;
             else mode = 2;
         }
         if (mode == 3) {
-            theGeometry->theElements->nodes->X = X;
-            theGeometry->theElements->nodes->Y = Y;
-            glfemPlotField(theGeometry->theElements, zeros);
+            memcpy(theGeometry->theElements->nodes->X, X, sizeof(double)*n);
+            memcpy(theGeometry->theElements->nodes->Y, Y, sizeof(double)*n);
+            glfemPlotNumbers(theGeometry->theElements);
             glfemPlotMesh(theGeometry->theElements); 
-            theGeometry->theNodes->X = Xdef,
-            theGeometry->theNodes->Y = Ydef;
+            memcpy(theGeometry->theNodes->X, Xdef, sizeof(double)*n);
+            memcpy(theGeometry->theNodes->Y, Ydef, sizeof(double)*n);
             sprintf(theMessage, "Number of elements : %d ",theGeometry->theElements->nElem);
             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
         if (mode == 2) {

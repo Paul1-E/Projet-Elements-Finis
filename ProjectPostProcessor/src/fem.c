@@ -848,11 +848,10 @@ void femFieldWrite(int size, int shift, double* value, const char *filename) {
 int femFieldRead(int* size, int shift, double* value, const char *filename, int line) {
     FILE* file = fopen(filename,"r");
 
-
     ErrorScan(fscanf(file, "Size %d \n", size));
     for (int i=0; i < *size; i++){
           ErrorScan(fscanf(file,"%le",&value[i*shift]));
-          if ((i+1) != *size  && (i+1) % 3 == 0) ErrorScan(fscanf(file,"\n")); }
+          if ((i+1) != *size  && (i+1) % line == 0) ErrorScan(fscanf(file,"\n")); }
 
     printf( "Reading field of size %d with shift %d\n", *size,shift);
     fclose(file);

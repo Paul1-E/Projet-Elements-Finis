@@ -26,7 +26,7 @@ int main(void)
     
     theGeometry->LxPlate     =  Lx;
     theGeometry->LyPlate     =  Ly;     
-    theGeometry->h           =  Lx * 0.03;    
+    theGeometry->h           =  Lx * 0.04;    
     theGeometry->elementType = FEM_TRIANGLE;
   
     geoMeshGenerate();      // Utilisation de OpenCascade

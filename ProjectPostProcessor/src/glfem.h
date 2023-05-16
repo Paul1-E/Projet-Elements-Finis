@@ -36,7 +36,7 @@ void 		    glfemSetRasterSize(int width, int height);
 GLFWwindow* glfemInit(char *windowName);
 static void glfemKeyCallback(GLFWwindow* self,int key,int scancode,int action,int mods);
 
-
+void glfemPlotNumbers(femMesh *theMesh);
 
 
 #endif
