@@ -257,32 +257,32 @@ double *femElasticitySolve(femProblem *theProblem)
                 //     printf("normale du noeud %d = (%f ; %f)\n", k, normales[2 * k], normales[2 * k + 1]);   
                 //     printf("tangente du noeud %d = (%f ; %f)\n", k, tangentes[2 * k], tangentes[2 * k + 1]);}   
 
+                if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) { 
                 // Itération sur tous les noeuds du domaine
-                for (int j = 0; j < nElem + 1; j++){
+                    for (int j = 0; j < nElem + 1; j++){
+                        // technique pour récupérer tous les noeuds sur base des éléments
+                        if (j == nElem) {
+                            node0 = bndMesh->elem[2 * bndElem[j-1] + 1];
+                        }
+                        else {node0 = bndMesh->elem[2 * bndElem[j]];}
 
-                    // technique pour récupérer tous les noeuds sur base des éléments
-                    if (j == nElem) {
-                        node0 = bndMesh->elem[2 * bndElem[j-1] + 1];
-                    }
-                    else {node0 = bndMesh->elem[2 * bndElem[j]];}
-                    
+                        // Combinaison linéaire des lignes de la matrice pour changer (U, V) en (N, T) (voir rapport)
+                        double A_U, A_V, B_U, B_V, nx, ny, tx, ty;
+                        nx = normales[2 * j];
+                        ny = normales[2 * j+1];
+                        tx = tangentes[2 * j];
+                        ty = tangentes[2 * j+1];
 
-                    // Combinaison linéaire des lignes de la matrice pour changer (U, V) en (N, T) (voir rapport)
-                    double A_U, A_V, B_U, B_V, nx, ny, tx, ty;
-                    nx = normales[2 * j];
-                    ny = normales[2 * j+1];
-                    tx = tangentes[2 * j];
-                    ty = tangentes[2 * j+1];
-
-                    B_U = B[2*node0];
-                    B_V = B[2*node0+1];
-                    B[2*node0] = nx * B_U + ny * B_V;
-                    B[2*node0 + 1] = tx * B_U + ty * B_V;
-                    for (int k = 0; k < theSystem->size; k++) {
-                        A_U = A[2*node0][k];
-                        A_V = A[2*node0+1][k];
-                        A[2*node0][k]   = nx *A_U + ny * A_V;
-                        A[2*node0+1][k] = tx *A_U + ty * A_V;
+                        B_U = B[2*node0];
+                        B_V = B[2*node0+1];
+                        B[2*node0] = nx * B_U + ny * B_V;
+                        B[2*node0 + 1] = tx * B_U + ty * B_V;
+                        for (int k = 0; k < theSystem->size; k++) {
+                            A_U = A[2*node0][k];
+                            A_V = A[2*node0+1][k];
+                            A[2*node0][k]   = nx *A_U + ny * A_V;
+                            A[2*node0+1][k] = tx *A_U + ty * A_V;
+                        }
                     }
                 }
             }       
@@ -314,14 +314,14 @@ double *femElasticitySolve(femProblem *theProblem)
                     B[2 * node0 + shift] += jac * cnd->value;
                     B[2 * node1 + shift] += jac * cnd->value;
                 }
-                else { // NEUMANN_N ou NEUMANN_T
+                else if (cnd->type == NEUMANN_N || cnd->type == NEUMANN_T){ // NEUMANN_N ou NEUMANN_T
                     double *n_or_t = (cnd->type == NEUMANN_N) ? cnd->domain->normales : cnd->domain->tangentes;
                     // l'index du noeud gauche dans n_or_t = index de l'élement
                     // l'index du noeud gauche dans n_or_t = index de l'élement + 1
-                    B[2 * node0] += jac * cnd->value *      n_or_t[2 * j];
-                    B[2 * node0 + 1] += jac * cnd->value *  n_or_t[2 * j + 1];
-                    B[2 * node1] += jac * cnd->value *      n_or_t[2 * (j+1)];
-                    B[2 * node1 + 1] += jac * cnd->value *  n_or_t[2*(j+1) + 1] ;
+                    B[2 * node0]        += jac * cnd->value *      n_or_t[2 * j];
+                    B[2 * node0 + 1]    += jac * cnd->value *  n_or_t[2 * j + 1];
+                    B[2 * node1]        += jac * cnd->value *      n_or_t[2 * (j+1)];
+                    B[2 * node1 + 1]    += jac * cnd->value *  n_or_t[2*(j+1) + 1] ;
                 }
 
             }
