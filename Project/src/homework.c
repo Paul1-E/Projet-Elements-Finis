@@ -7,47 +7,48 @@
 //  (4) Et remplacer le solveur plein par un truc un fifrelin plus subtil  (mandatory)
 
 
-/*double *theGlobalCoord;
+double* VAL;
+
+int compare(const void *a, const void *b) {
+    if (VAL[*(int*)a] < VAL[*(int*)b]) return 1;
+    if (VAL[*(int*)a] > VAL[*(int*)b]) return -1;
+    return 0;
+}
+
 
 void femMeshRenumber(femMesh *theMesh, femRenumType renumType)
 {
-    int i, *inverse;
-    
+    int i;
+    int *tab = malloc(sizeof(int) * theMesh->nodes->nNodes);
+
+    for (i = 0; i < theMesh->nodes->nNodes; i++) 
+        tab[i] = i;
+
     switch (renumType) {
         case FEM_NO :
-            for (i = 0; i < theMesh->nNode; i++) 
-                theMesh->number[i] = i;
             break;
         case FEM_XNUM : 
-            inverse = malloc(sizeof(int)*theMesh->nNode);
-            for (i = 0; i < theMesh->nNode; i++) 
-                inverse[i] = i; 
-            theGlobalCoord = theMesh->X;
-            qsort(inverse, theMesh->nNode, sizeof(int), compare);
-            for (i = 0; i < theMesh->nNode; i++)
-                theMesh->number[inverse[i]] = i;
-            free(inverse);  
-            break;
+            VAL = theMesh->nodes->X;
+            qsort(tab, theMesh->nodes->nNodes, sizeof(int), compare);
         case FEM_YNUM : 
-            inverse = malloc(sizeof(int)*theMesh->nNode);
-            for (i = 0; i < theMesh->nNode; i++) 
-                inverse[i] = i; 
-            theGlobalCoord = theMesh->Y;
-            qsort(inverse, theMesh->nNode, sizeof(int), compare);
-            for (i = 0; i < theMesh->nNode; i++)
-                theMesh->number[inverse[i]] = i;
-            free(inverse);  
-            break;
+            VAL = theMesh->nodes->Y; 
+            qsort(tab, theMesh->nodes->nNodes, sizeof(int), compare);
+            break;            
         default : Error("Unexpected renumbering option"); }
+    
+    for (i = 0; i < theMesh->nodes->nNodes; i++) {
+        theMesh->number[tab[i]] = i;
+    }
+    free(tab);
 }
 
 
 int femMeshComputeBand(femMesh *theMesh)
-{
+{   
     int iElem,j,myMax,myMin,myBand,map[4];
     int nLocal = theMesh->nLocalNode;
     myBand = 0;
-    for(iElem = 0; iElem < theMesh->nElem; iElem++) {
+    for (iElem = 0; iElem < theMesh->nElem; iElem++) {
         for (j=0; j < nLocal; ++j) 
             map[j] = theMesh->number[theMesh->elem[iElem*nLocal+j]];
         myMin = map[0];
@@ -55,12 +56,13 @@ int femMeshComputeBand(femMesh *theMesh)
         for (j=1; j < nLocal; j++) {
             myMax = fmax(map[j],myMax);
             myMin = fmin(map[j],myMin); }
-        if (myBand < (myMax - myMin)) myBand = myMax - myMin; }         
+        if (myBand < (myMax - myMin)) myBand = myMax - myMin; 
+    }         
     return(++myBand);
 }
 
 
-double  *femBandSystemEliminate(femFullSystem *myBand, int band)
+/*double  *femBandSystemEliminate(femFullSystem *myBand, int band)
 {
     double  **A, *B, factor;
     int     i, j, k, jend, size, band;
@@ -68,7 +70,7 @@ double  *femBandSystemEliminate(femFullSystem *myBand, int band)
     B    = myBand->B;
     size = myBand->size;
 
-    /* Incomplete Cholesky factorization 
+    //Incomplete Cholesky factorization 
 
     for (k=0; k < size; k++) {
         if ( fabs(A[k][k]) <= 1e-4 ) {
@@ -80,7 +82,7 @@ double  *femBandSystemEliminate(femFullSystem *myBand, int band)
                 A[i][j] = A[i][j] - A[k][j] * factor;
             B[i] = B[i] - B[k] * factor; }}
         
-    /* Back-substitution 
+    // Back-substitution 
 
     for (i = (size-1); i >= 0 ; i--) {
         factor = 0;
@@ -90,13 +92,13 @@ double  *femBandSystemEliminate(femFullSystem *myBand, int band)
         B[i] = ( B[i] - factor)/A[i][i]; }
 
     return(myBand->B);
-}
-*/
+}*/
+
 
 
 double *femElasticitySolve(femProblem *theProblem)
 {
-
+    
     femFullSystem  *theSystem = theProblem->system;
     femIntegration *theRule = theProblem->rule;
     femDiscrete    *theSpace = theProblem->space;
@@ -117,8 +119,10 @@ double *femElasticitySolve(femProblem *theProblem)
     double g   = theProblem->g;
     double **A = theSystem->A;
     double *B  = theSystem->B;
-    
-    //femMeshRenumber(theMesh, FEM_XNUM);
+
+    femMeshRenumber(theMesh, FEM_XNUM);
+    int myBand = femMeshComputeBand(theMesh);
+    printf("\nsize : %d, band : %d\n", theSystem->size, myBand);
     
     for (iElem = 0; iElem < theMesh->nElem; iElem++) {
         for (j=0; j < nLocal; j++) {

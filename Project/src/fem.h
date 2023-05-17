@@ -41,6 +41,7 @@ typedef struct {
     int nLocalNode;
     int nElem;
     int *elem;
+    int *number;
     femNodes *nodes;
 } femMesh;
 

@@ -26,7 +26,9 @@ void geoFree()
         free(theGeometry.theNodes); }
     if (theGeometry.theElements) {
         free(theGeometry.theElements->elem);
-        free(theGeometry.theElements); }
+        free(theGeometry.theElements->number);
+        free(theGeometry.theElements);
+        }
     if (theGeometry.theEdges) {
         free(theGeometry.theEdges->elem);
         free(theGeometry.theEdges); }
@@ -197,8 +199,10 @@ void geoMeshRead(const char *filename)
       for (int i=0; i < theDomain->nElem; i++){
           ErrorScan(fscanf(file,"%6d",&theDomain->elem[i]));
           if ((i+1) != theDomain->nElem  && (i+1) % 10 == 0) ErrorScan(fscanf(file,"\n")); }}
+    int *number = malloc(sizeof(int) * theGeometry.theElements->nodes->nNodes);
+    theGeometry.theElements->number = number;
     
-   fclose(file);
+    fclose(file);
 }
 
 void geoSetDomainName(int iDomain, char *name) 
