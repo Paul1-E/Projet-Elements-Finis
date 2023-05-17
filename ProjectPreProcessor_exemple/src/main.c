@@ -26,7 +26,7 @@ int main(void)
     
     theGeometry->LxPlate     =  Lx;
     theGeometry->LyPlate     =  Ly;     
-    theGeometry->h           =  Lx * 0.5;    
+    theGeometry->h           =  Lx * 0.05;    
     theGeometry->elementType = FEM_QUAD;
   
     geoMeshGenerate();      // Utilisation de OpenCascade
@@ -35,16 +35,11 @@ int main(void)
                             // Attention : les entit�s sont diff�rentes !
                             // On a aussi invers� la g�omtrie pour rire !
                             
-    //geoMeshGenerateGeoFile("../data/mesh.geo");   // Lecture fichier geo
+//    geoMeshGenerateGeoFile("../data/mesh.geo");   // Lecture fichier geo
   
     geoMeshImport();
-    geoSetDomainName(0,"Bottom");
-    geoSetDomainName(1,"Right");
-    geoSetDomainName(2,"Top");
-    geoSetDomainName(3,"Left");
-
-    //geoSetDomainName(7,"Bottom");
-
+    geoSetDomainName(1,"Top");
+    geoSetDomainName(7,"Bottom");
     geoMeshWrite("../../Project/data/mesh.txt");
           
 //
@@ -56,13 +51,8 @@ int main(void)
     double rho = 7.85e3; 
     double g   = 9.81;
     femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRAIN);
-
-    femElasticityAddBoundaryCondition(theProblem,"Top",DIRICHLET_X,0.0);
     femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_X,0.0);
     femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_Y,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"Top",NEUMANN_N,100000); 
-
-
     femElasticityPrint(theProblem);
     femElasticityWrite(theProblem,"../../Project/data/problem.txt");
  

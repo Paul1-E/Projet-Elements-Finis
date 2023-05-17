@@ -556,6 +556,7 @@ void femElasticityFree(femProblem *theProblem)
     
 void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain, femBoundaryType type, double value)
 {
+
     int iDomain = geoGetDomain(nameDomain);
     if (iDomain == -1)  Error("Undefined domain :-(");
 
@@ -566,16 +567,17 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
     theProblem->nBoundaryConditions++;
     int size = theProblem->nBoundaryConditions;
 
-    theBoundary->domain->n_t_determined = 0; // Utilisé lors des calculs de tangentes et normales
-    
+    theBoundary->domain->n_t_malloced = 0; // Utilisé lors des calculs de tangentes et normales
+    theBoundary->domain->n_t_matrix = 0; // Utilisé lors des calculs de tangentes et normales
+
     if (theProblem->conditions == NULL)
         theProblem->conditions = malloc(size*sizeof(femBoundaryCondition*));
     else 
         theProblem->conditions = realloc(theProblem->conditions, size*sizeof(femBoundaryCondition*));
     theProblem->conditions[size-1] = theBoundary;
     
-    
-    int shift;
+   
+    int shift = 0;
     if (type == DIRICHLET_X)  shift = 0;      
     if (type == DIRICHLET_Y)  shift = 1;  
     int *elem = theBoundary->domain->elem;
@@ -583,7 +585,11 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
     for (int e=0; e<nElem; e++) {
         for (int i=0; i<2; i++) {
             int node = theBoundary->domain->mesh->elem[2*elem[e]+i];
-            theProblem->constrainedNodes[2*node+shift] = size-1; }}    
+            theProblem->constrainedNodes[2*node+shift] = size-1; 
+        }
+
+    }    
+
 }
 
 void femElasticityPrint(femProblem *theProblem)  
@@ -660,6 +666,7 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
     
     int size = 2*theGeometry->theNodes->nNodes;
     theProblem->constrainedNodes = malloc(size*sizeof(int));
+
     for (int i=0; i < size; i++) 
         theProblem->constrainedNodes[i] = -1;
     
@@ -678,7 +685,7 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
     char theArgument[MAXNAME];
     double value;
     double typeCondition;
-    
+   
     while (!feof(file)) {
         ErrorScan(fscanf(file,"%19[^\n]s \n",(char *)&theLine));
         if (strncasecmp(theLine,"Type of problem     ",19) == 0) {

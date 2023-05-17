@@ -671,7 +671,7 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
     theProblem->conditions[size-1] = theBoundary;
     
     
-    int shift;
+    int shift = 0;
     if (type == DIRICHLET_X)  shift = 0;      
     if (type == DIRICHLET_Y)  shift = 1;  
     int *elem = theBoundary->domain->elem;

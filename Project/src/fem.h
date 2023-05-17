@@ -50,9 +50,10 @@ typedef struct {
     int nElem;
     int *elem;
     char name[MAXNAME];
-    double *tangentes; // utilisés pour les conditions normales et tangentes
+    double *tangentes;  // utilisés pour les conditions normales et tangentes
     double *normales;
-    int n_t_determined; // Utilisé pour voir si normales et tangents ont déjà été calculées sur ce domaine !
+    int n_t_malloced;   // Utilisé pour voir si normales et tangents ont déjà été calculées sur ce domaine !
+    int n_t_matrix;     //utilisé pour voir si la matrice a été adaptée, ds le cas de conditions DIRICHLET N-T
 } femDomain;
 
 typedef struct {

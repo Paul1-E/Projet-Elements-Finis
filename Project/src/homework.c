@@ -208,95 +208,92 @@ double *femElasticitySolve(femProblem *theProblem)
         int nElem = cnd->domain->nElem;
         int node0, node1;
 
-        // Calcul des normales et tangentes
+        // Calcul des normales et tangentes et adaptation de A et B si nécessaire
         if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T ||
                 cnd->type == NEUMANN_N || cnd->type == NEUMANN_T) {
 
-            if (cnd->domain->n_t_determined == 0) { // si les n et t n'ont pas encore été calculées
-                cnd->domain->n_t_determined = 1;
-                // nbre de noeuds = nbre de segments + 1
-                // pour chaque noeud, normale et tangent = vecteur de taille 2
+            if (cnd->domain->n_t_malloced == 0) { // si les n et t n'ont pas encore été calculées
+                cnd->domain->n_t_malloced = 1;
+
+                // nbre de noeuds = nbre de segments + 1, et pour chaque noeud, normale et tangent = vecteur de taille 2
                 cnd->domain->normales = calloc(sizeof(double), 2 * (bndMesh->nElem + 1) ); 
-                double *normales = cnd->domain->normales;
                 cnd->domain->tangentes = calloc(sizeof(double),  2 * (bndMesh->nElem + 1) ); 
+                double *normales = cnd->domain->normales;
                 double *tangentes = cnd->domain->tangentes;
-                int j = 0;
 
                 // Calcul des normales et tangentes
                 for (int j = 0; j < nElem; j++){
                     node0 = bndMesh->elem[2 * bndElem[j]];
                     node1 = bndMesh->elem[2 * bndElem[j] + 1];
+                    double dx = X[node1] - X[node0];
+                    double dy = Y[node1] - Y[node0];
 
                     // contributions au noeud gauche
-                    tangentes[2 * j] += X[node1] - X[node0];
-                    tangentes[2 * j + 1] += Y[node1] - Y[node0];
-                    normales[2 * j] += - Y[node1] + Y[node0];
-                    normales[2 * j + 1] += X[node1] - X[node0];
+                    tangentes[2 * j]        += dx;
+                    tangentes[2 * j + 1]    += dy;
+                    normales[2 * j]         += - dy;
+                    normales[2 * j + 1]     += dx;
 
                     // contributions au noeud droite
-                    tangentes[2 * (j+1)] += X[node1] - X[node0];
-                    tangentes[2 * (j+1) + 1] += Y[node1] - Y[node0];
-                    normales[2 * (j+1)] += - Y[node1] + Y[node0];
-                    normales[2 * (j+1) + 1] += X[node1] - X[node0];
-
-
+                    tangentes[2 * (j+1)]        += dx;
+                    tangentes[2 * (j+1) + 1]    += dy;
+                    normales[2 * (j+1)]         += - dy;
+                    normales[2 * (j+1) + 1]     += dx;
                 }
 
                 // Normalisation des normales et tangentes :
                 for (int j = 0; j < nElem + 1; j++){
                     double norm = sqrt( tangentes[2*j]*tangentes[2*j] + tangentes[2*j+1]*tangentes[2*j+1]);
-                    tangentes[2*j] /= norm;
-                    tangentes[2*j+1] /= norm;
+                    tangentes[2*j] /= norm; tangentes[2*j+1] /= norm;
                     norm = sqrt( normales[2*j]*normales[2*j] + normales[2*j+1]*normales[2*j+1]);
-                    normales[2*j] /= norm;
-                    normales[2*j+1] /= norm;
+                    normales[2*j] /= norm; normales[2*j+1] /= norm;
                 }
 
                 // petit check
                 // for (int k = 0; k < nElem + 1; k++ ) {
                 //     printf("normale du noeud %d = (%f ; %f)\n", k, normales[2 * k], normales[2 * k + 1]);   
                 //     printf("tangente du noeud %d = (%f ; %f)\n", k, tangentes[2 * k], tangentes[2 * k + 1]);}   
-
-                if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) { 
+            }
+            
+            if ((cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) &&
+                    cnd->domain->n_t_matrix == 0) { // si A et B n'ont pas été adaptés en n - t
+                cnd->domain->n_t_matrix = 1;
                 // Itération sur tous les noeuds du domaine
-                    for (int j = 0; j < nElem + 1; j++){
-                        // technique pour récupérer tous les noeuds sur base des éléments
-                        if (j == nElem) {
-                            node0 = bndMesh->elem[2 * bndElem[j-1] + 1];
-                        }
-                        else {node0 = bndMesh->elem[2 * bndElem[j]];}
+                for (int j = 0; j < nElem + 1; j++){
+                    // technique pour récupérer tous les noeuds sur base des éléments
+                    if (j == nElem) {
+                        node0 = bndMesh->elem[2 * bndElem[j-1] + 1];
+                    }
+                    else {node0 = bndMesh->elem[2 * bndElem[j]];}
 
-                        // Combinaison linéaire des lignes et colonnes de la matrice pour changer (U, V) en (N, T) (voir rapport)
-                        double A_U, A_V, B_U, B_V, nx, ny, tx, ty;
-                        nx = normales[2 * j];
-                        ny = normales[2 * j+1];
-                        tx = tangentes[2 * j];
-                        ty = tangentes[2 * j+1];
+                    // Combinaison linéaire des lignes et colonnes de la matrice pour changer (U, V) en (N, T) (voir rapport)
+                    double A_U, A_V, B_U, B_V, nx, ny, tx, ty;
+                    double *normales    = cnd->domain->normales;
+                    double *tangentes   = cnd->domain->tangentes;
+                    nx = normales[2 * j];   ny = normales[2 * j+1];
+                    tx = tangentes[2 * j];  ty = tangentes[2 * j+1];
 
-                        B_U = B[2*node0];
-                        B_V = B[2*node0+1];
-                        B[2*node0] = nx * B_U + ny * B_V;
-                        B[2*node0 + 1] = tx * B_U + ty * B_V;
-                        // Modification des lignes
-                        for (int k = 0; k < theSystem->size; k++) {
-                            A_U = A[2*node0][k];
-                            A_V = A[2*node0+1][k];
-                            A[2*node0][k]   = nx *A_U + ny * A_V;
-                            A[2*node0+1][k] = tx *A_U + ty * A_V;
-                        }
-                        // Modification des colonnes
-                        for (int k = 0; k < theSystem->size; k++) {
-                            A_U = A[k][2*node0];
-                            A_V = A[k][2*node0+1];
-                            A[k][2*node0]   = nx *A_U + ny * A_V;
-                            A[k][2*node0+1] = tx *A_U + ty * A_V;
-                        }
+                    B_U = B[2*node0];   B_V = B[2*node0+1];
+                    B[2*node0]      = nx * B_U + ny * B_V;
+                    B[2*node0 + 1]  = tx * B_U + ty * B_V;
+                    // Modification des lignes
+                    for (int k = 0; k < theSystem->size; k++) {
+                        A_U = A[2*node0][k];    A_V = A[2*node0+1][k];
+                        A[2*node0][k]   = nx *A_U + ny * A_V;
+                        A[2*node0+1][k] = tx *A_U + ty * A_V;
+                    }
+                    // Modification des colonnes
+                    for (int k = 0; k < theSystem->size; k++) {
+                        A_U = A[k][2*node0];    A_V = A[k][2*node0+1];
+                        A[k][2*node0]   = nx *A_U + ny * A_V;
+                        A[k][2*node0+1] = tx *A_U + ty * A_V;
                     }
                 }
-            }       
+            }
+                   
         }
 
-        // Application des différentes contraintes
+        // Application des différentes conditions
         if (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) {
           
             for (int j = 0; j < nElem + 1; j++){
@@ -318,9 +315,27 @@ double *femElasticitySolve(femProblem *theProblem)
                                     (Y[node0] - Y[node1]) * (Y[node0] - Y[node1]));
 
                 if (cnd->type == NEUMANN_X || cnd->type == NEUMANN_Y) {
-                    int shift = (cnd->type == NEUMANN_X ) ? 0 : 1;
-                    B[2 * node0 + shift] += jac * cnd->value;
-                    B[2 * node1 + shift] += jac * cnd->value;
+                    if (iCase == AXISYM) { // Prise en compte du cas axisymétrique
+                        
+                        // ce sont les deux valeurs prises par les fcts de formes, mais pas les fcts de formes
+                        double phi[2] = { (1+sqrt(3))/2, (1-sqrt(3))/2}; 
+                        double x[2] = {X[node0], X[node1]};
+                        double xLoc[2] = {x[0] * phi[1] + x[1] * phi[0], x[0] * phi[0] + x[1] * phi[1]};
+
+                        int shift = (cnd->type == NEUMANN_X ) ? 0 : 1;           
+                        B[2 * node0 + shift] += jac * cnd->value * phi[1] * xLoc[0] ; // premier point d'intégration
+                        B[2 * node0 + shift] += jac * cnd->value * phi[0] * xLoc[1] ; // deuxième point d'intégration
+
+                        B[2 * node1 + shift] += jac * cnd->value * phi[0] * xLoc[0] ; // premier point d'intégration
+                        B[2 * node1 + shift] += jac * cnd->value * phi[1] * xLoc[1] ; // deuxième point d'intégration                                                                             
+                    }
+
+                    else {
+                        int shift = (cnd->type == NEUMANN_X ) ? 0 : 1;
+                        B[2 * node0 + shift] += jac * cnd->value;
+                        B[2 * node1 + shift] += jac * cnd->value;                      
+                    }
+
                 }
                 else if (cnd->type == NEUMANN_N || cnd->type == NEUMANN_T){ // NEUMANN_N ou NEUMANN_T
                     double *n_or_t = (cnd->type == NEUMANN_N) ? cnd->domain->normales : cnd->domain->tangentes;
@@ -353,8 +368,8 @@ double *femElasticitySolve(femProblem *theProblem)
     for (int i = 0; i < theProblem->nBoundaryConditions; i++) {
         femBoundaryCondition* cnd = theProblem->conditions[i] ;
         if ( (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) &&
-                (cnd->domain->n_t_determined == 1) ) { // si on a pas encore convertis de N-T en U-V
-            cnd->domain->n_t_determined == 0;
+                (cnd->domain->n_t_matrix == 1) ) { // si on a pas encore converti de N-T en U-V
+            cnd->domain->n_t_malloced = 0;
             int nElem = cnd->domain->nElem;
             femMesh * bndMesh = cnd->domain->mesh;
             int * bndElem = cnd->domain->elem;
@@ -368,19 +383,23 @@ double *femElasticitySolve(femProblem *theProblem)
                 }
                 else {node0 = bndMesh->elem[2 * bndElem[j]];}
 
-                nx = normales[2 * j];
-                ny = normales[2 * j+1];          
-                tx = tangentes[2 * j];
-                ty = tangentes[2 * j+1];
+                nx = normales[2 * j];   ny = normales[2 * j+1];          
+                tx = tangentes[2 * j];  ty = tangentes[2 * j+1];
 
-
-                double B_U = B[2*node0];
-                double B_V = B[2*node0+1];
-                B[2*node0] = nx * B_U + ny * B_V;
-                B[2*node0 + 1] = tx * B_U + ty * B_V;
+                double B_U = B[2*node0];    double B_V = B[2*node0+1];
+                B[2*node0]      = nx * B_U + ny * B_V;
+                B[2*node0 + 1]  = tx * B_U + ty * B_V;
             }
         }
     }
+    // free tan - norm
+    for (int i = 0; i < theProblem->nBoundaryConditions; i++) {
+        femBoundaryCondition* cnd = theProblem->conditions[i] ;
+            if (cnd->domain->n_t_malloced == 1) {
+                free(cnd->domain->normales);
+                free(cnd->domain->tangentes);
+            }
+        }
     return B;
 }
 
