@@ -29,7 +29,7 @@ int main(void)
     theGeometry->h           =  Lx * 0.05;    
     theGeometry->elementType = FEM_TRIANGLE;
   
-    geoMeshGenerate();      // Utilisation de OpenCascade
+    geoMeshGenerate_standard();      // Utilisation de OpenCascade
     
 //  geoMeshGenerateGeo();   // Utilisation de outils de GMSH  
                             // Attention : les entit�s sont diff�rentes !
@@ -38,9 +38,17 @@ int main(void)
 //  geoMeshGenerateGeoFile("../data/mesh.geo");   // Lecture fichier geo
   
     geoMeshImport();
+    // géométrie standard
     geoSetDomainName(0,"left");
     geoSetDomainName(14,"right");
     geoSetDomainName(5,"top");
+    geoSetDomainName(11,"middle");
+
+    // géométrie BMX
+    // geoSetDomainName(0,"left");
+    // geoSetDomainName(16, "right");
+    // geoSetDomainName(5,"top");
+
     geoMeshWrite("../../Project/data/mesh.txt");
           
 //
@@ -52,7 +60,7 @@ int main(void)
     double nu;
     double rho;
     double sigmaY;
-    femMat theMat = ACIER;
+    femMat theMat = ALU;
 
     switch(theMat) {
         case ACIER:
@@ -87,10 +95,10 @@ int main(void)
 
     femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,sigmaY,m,PLANAR_STRESS);
     femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_Y,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_X,0.0);
+    femElasticityAddBoundaryCondition(theProblem,"middle",DIRICHLET_X,0.0);
     femElasticityAddBoundaryCondition(theProblem,"right",DIRICHLET_Y,0.0);
     femElasticityAddBoundaryCondition(theProblem,"top",NEUMANN_Y,-pression);
-    femElasticityPrint(theProblem);
+    femElasticityPrint(theProblem); 
     femElasticityWrite(theProblem,"../../Project/data/problem.txt");
  
 
