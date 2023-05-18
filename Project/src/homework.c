@@ -239,41 +239,6 @@ double* femBandSystemEliminate(femBandSystem* mySystem)
     return(mySystem->B);
 }
 
-double  *femBandSystemEliminate2(femBandSystem *myBand)
-{
-    double  **A, *B, factor;
-    int     i, j, k, jend, size, band;
-    A    = myBand->A;
-    B    = myBand->B;
-    size = myBand->size;
-    band = myBand->band;
-
-    //Incomplete Cholesky factorization 
-
-    for (k=0; k < size; k++) {
-        if ( fabs(A[k][k]) <= 1e-8 ) {
-            printf("Pivot index %d  ",k);
-            printf("Pivot value %e  ",A[k][k]);
-            Error("Cannot eliminate with such a pivot"); }
-        jend = ( k + band / 2 +1 < size) ? (k + band/2 +1) : size; 
-        for (i = k+1 ; i <  jend; i++) {
-            factor = A[i][k] / A[k][k];
-            for (j = k+1 ; j < jend; j++) 
-                A[i][j] = A[i][j] - A[k][j] * factor;
-            B[i] = B[i] - B[k] * factor; }}
-        
-    // Back-substitution 
-
-    for (i = (size-1); i >= 0 ; i--) {
-        factor = 0;
-        jend = (i+band/2 + 1 < size) ? i + band/2+1 : size;
-        for (j = i+1 ; j < jend; j++)
-            factor += A[i][j] * B[j];
-        B[i] = ( B[i] - factor)/A[i][i]; }
-
-    return(myBand->B);
-}
-
 void femBandSystemInit(femBandSystem *myBandSystem)
 {
     int i;
