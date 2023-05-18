@@ -12,6 +12,13 @@
  
 #include "fem.h"
 #include "glfem.h"
+#include <time.h>
+
+
+double computeTime(clock_t start, clock_t end) {
+    return (double)(end - start) / CLOCKS_PER_SEC;
+}
+
 
 int main(void)
 {  
@@ -23,7 +30,9 @@ int main(void)
     theProblem->solver = solver;
     theProblem->renumType = renumType;
     femElasticityPrint(theProblem);
+    start = clock();
     double *theSoluce = femElasticitySolve(theProblem); 
+    end = clock();
     femNodes *theNodes = theGeometry->theNodes;
     femFieldWrite(theNodes->nNodes,2,&theSoluce[0],"../data/U.txt", 3);
     femFieldWrite(theNodes->nNodes,2,&theSoluce[1],"../data/V.txt", 3);
@@ -35,7 +44,9 @@ int main(void)
     femPrintStress(theStress, 10, l);  // change second arg to show the stress of the number of nodes wanted 
     double *eqStress = femPlastic(theProblem, theStress);
     femFieldWrite(theNodes->nNodes, 1, eqStress, "../data/Stress.txt", 1);
-        int mode = 1; 
+    printf("\nComputing solution takes %.6f seconds\n", computeTime(start, end));
+ 
+    int mode = 1; 
  
     GLFWwindow* window = glfemInit("EPL1110 : Project 2022-23 ");
     glfwMakeContextCurrent(window);
