@@ -14,8 +14,8 @@
 
 int main(void)
 {  
-    femSolverType solver = GRADIENTS_CONJUGUES;   // TODO : request user input
-    femRenumType renumType= FEM_NO;                // TODO : request user input
+    femSolverType solver = SOLVEUR_BANDE;   // TODO : request user input
+    femRenumType renumType= FEM_XNUM;                // TODO : request user input
     femGeo* theGeometry = geoGetGeometry();   
     geoMeshRead("../data/mesh.txt");
     femProblem* theProblem = femElasticityRead(theGeometry,"../data/problem.txt");

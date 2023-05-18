@@ -75,7 +75,7 @@ void conjugateGradient(double** A, double *b, double *x, int size) {
         delta += r[i] * r[i];
 
     int k = 0;
-    while (delta > 1e-11) {  // Critère de convergence
+    while (delta > 1e-10) {  // Critère de convergence
         // Calcul de s
         for (int i = 0; i < size; i++) {
             s[i] = 0.0;
@@ -113,7 +113,7 @@ void conjugateGradient(double** A, double *b, double *x, int size) {
     printf("Convergence after %d iterations.\n", k);
 }
 
-/*double  *femBandSystemEliminate(femFullSystem *myBand, int band)
+double  *femBandSystemEliminate(femBandSystem *myBand)
 {
     double  **A, *B, factor;
     int     i, j, k, jend, size, band;
@@ -126,7 +126,7 @@ void conjugateGradient(double** A, double *b, double *x, int size) {
     for (k=0; k < size; k++) {
         if ( fabs(A[k][k]) <= 1e-4 ) {
             Error("Cannot eleminate with such a pivot"); }
-        jend = fmin(k + band,size);
+        jend = fmin(k + band/2 + 1,size);
         for (i = k+1 ; i <  jend; i++) {
             factor = A[k][i] / A[k][k];
             for (j = i ; j < jend; j++) 
@@ -137,13 +137,37 @@ void conjugateGradient(double** A, double *b, double *x, int size) {
 
     for (i = (size-1); i >= 0 ; i--) {
         factor = 0;
-        jend = fmin(i + band,size);
+        jend = fmin(i + band/2 + 1,size);
         for (j = i+1 ; j < jend; j++)
             factor += A[i][j] * B[j];
         B[i] = ( B[i] - factor)/A[i][i]; }
 
     return(myBand->B);
-}*/
+}
+
+void femBandSystemInit(femBandSystem *myBandSystem)
+{
+    int i;
+    int size = myBandSystem->size;
+    int band = myBandSystem->band;
+    for (i=0 ; i < size*(band+1) ; i++) 
+        myBandSystem->B[i] = 0;        
+}
+
+femBandSystem *femBandSystemCreate(int size, int band)
+{
+    femBandSystem *myBandSystem = malloc(sizeof(femBandSystem));
+    myBandSystem->B = malloc(sizeof(double)*size*(band+1));
+    myBandSystem->A = malloc(sizeof(double*)*size);        
+    myBandSystem->size = size;
+    myBandSystem->band = band;
+    myBandSystem->A[0] = myBandSystem->B + size;
+    int i;
+    for (i=1 ; i < size ; i++) 
+        myBandSystem->A[i] = myBandSystem->A[i-1] + band - 1;
+    femBandSystemInit(myBandSystem);
+    return(myBandSystem);
+}
 
 void femApplyBoundaryConditions(femProblem *theProblem) {
 
@@ -467,10 +491,24 @@ double *femElasticitySolve(femProblem *theProblem)
     femApplyBoundaryConditions(theProblem);
 
     // Résolution du système
+
     double *sol = malloc(sizeof(double) * theSystem->size); // solution avec la renumérotation
     if (theProblem->solver == SOLVEUR_PLEIN) {
         B = femFullSystemEliminate(theSystem);
         sol = memcpy(sol, B, sizeof(double)*theSystem->size);
+    }
+    if (theProblem->solver == SOLVEUR_BANDE) {
+        femBandSystem *theBandSystem = femBandSystemCreate(theSystem->size, myBand);
+        for (i = 0; i < theBandSystem->size; i++){
+            int jmin = fmax(0, i - myBand/2);
+            int jmax = fmin(theBandSystem->size, i + myBand/2 +1);
+            for (j = jmin; j < jmax; j++) {
+                theBandSystem->A[i][j] = A[i][j];
+            }
+            theBandSystem->B[i] = theSystem->B[i];
+        }
+        femBandSystemEliminate(theBandSystem);
+        sol = B;
     }
     else if (theProblem->solver == GRADIENTS_CONJUGUES) {
         conjugateGradient(A, B, sol, theSystem->size);  
