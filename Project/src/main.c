@@ -14,9 +14,13 @@
 
 int main(void)
 {  
+    femSolverType solver = GRADIENTS_CONJUGUES;   // TODO : request user input
+    femRenumType renumType= FEM_NO;                // TODO : request user input
     femGeo* theGeometry = geoGetGeometry();   
     geoMeshRead("../data/mesh.txt");
     femProblem* theProblem = femElasticityRead(theGeometry,"../data/problem.txt");
+    theProblem->solver = solver;
+    theProblem->renumType = renumType;
     femElasticityPrint(theProblem);
     double *theSoluce = femElasticitySolve(theProblem); 
     femNodes *theNodes = theGeometry->theNodes;

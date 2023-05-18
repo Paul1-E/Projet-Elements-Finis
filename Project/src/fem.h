@@ -29,6 +29,8 @@ typedef enum {DIRICHLET_X,DIRICHLET_Y,DIRICHLET_N,DIRICHLET_T,
               NEUMANN_X,NEUMANN_Y,NEUMANN_N,NEUMANN_T} femBoundaryType;
 typedef enum {PLANAR_STRESS,PLANAR_STRAIN,AXISYM} femElasticCase;
 typedef enum {FEM_NO,FEM_XNUM,FEM_YNUM} femRenumType;
+typedef enum {SOLVEUR_PLEIN,GRADIENTS_CONJUGUES} femSolverType;
+
 
 
 typedef struct {
@@ -109,6 +111,8 @@ typedef struct {
     femFullSystem *system;
     double sigmaY;
     double m;
+    femSolverType solver;
+    femRenumType renumType;
 } femProblem;
 
 
