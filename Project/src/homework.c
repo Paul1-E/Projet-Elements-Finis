@@ -745,7 +745,7 @@ double *femPlastic(femProblem *theProblem, double *sigma) {
         sigEq[i] = sqrt((pow(sigma[l*i]-sigma[l*i+1], 2) + pow(sigma[l*i+1]-sigtt,2) + pow(sigtt-sigma[i*l],2))/2 + 3*pow(sigma[i*l+2],2));
     }
     double sigMax = femMax(sigEq, n);
-    printf("\nLa limite de plasticité est de %14.7e, la contrainte équivalente maximale : %14.7e -> %14.7f %% \n", theProblem->sigmaY, sigMax, sigMax/theProblem->sigmaY); // %% interprété comme % par printf
+    printf("\nLa limite de plasticité est de %14.7e, la contrainte équivalente maximale : %14.7e -> %14.7f %% \n", theProblem->sigmaY, sigMax, 100*sigMax/theProblem->sigmaY); // %% interprété comme % par printf
     return sigEq;
 }
 

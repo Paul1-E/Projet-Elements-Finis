@@ -26,16 +26,11 @@ int main(void)
     
     theGeometry->LxPlate     =  Lx;
     theGeometry->LyPlate     =  Ly;     
-    theGeometry->h           =  Lx * 0.05;    
+    theGeometry->h           =  Lx * 0.04;    
     theGeometry->elementType = FEM_TRIANGLE;
   
-    geoMeshGenerate_standard();      // Utilisation de OpenCascade
-    
-//  geoMeshGenerateGeo();   // Utilisation de outils de GMSH  
-                            // Attention : les entit�s sont diff�rentes !
-                            // On a aussi invers� la g�omtrie pour rire !
-                            
-//  geoMeshGenerateGeoFile("../data/mesh.geo");   // Lecture fichier geo
+    geoMeshGenerate_standard_small();      // Choisir la géométrie parmis : geoMeshGenerate_BMX(), geoMeshGenerate_standard(), geoMeshGenerate_standard_small()
+
   
     geoMeshImport();
     // géométrie standard
@@ -43,11 +38,13 @@ int main(void)
     geoSetDomainName(14,"right");
     geoSetDomainName(5,"top");
     geoSetDomainName(11,"middle");
+    geoSetDomainName(1,"front");
 
     // géométrie BMX
-    // geoSetDomainName(0,"left");
-    // geoSetDomainName(16, "right");
-    // geoSetDomainName(5,"top");
+    /*geoSetDomainName(0,"left");
+    geoSetDomainName(16, "right");
+    geoSetDomainName(5,"top");
+    geoSetDomainName(12,"middle");*/
 
     geoMeshWrite("../../Project/data/mesh.txt");
           
@@ -56,6 +53,10 @@ int main(void)
 //  
 
     double g   = 9.81;
+    double v   = 20 / 3.6;
+    double C   = 1.15;  // Coefficient de trainée
+    double rhoAir   = 1.225;  // Densité de l'air 
+    double D_surf   = C * rhoAir * pow(v, 2) / 2;  // Pression de trainée
     double E;
     double nu;
     double rho;
@@ -90,14 +91,17 @@ int main(void)
         default: Error("Unexpected material");
     }
      
-    double m = 80;  // [kg]
-    double pression = m * g / 5e-3;
+    double m = 700;  // [kg]
+    double Sselle = 5e-3;  // Aire de la selle [m]
+    double Sped = 2*5e-3;  // Aire des pédales [m]
+    double pression = m * g / Sselle;  //[N/m]
 
     femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,sigmaY,m,PLANAR_STRESS);
     femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_Y,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"middle",DIRICHLET_X,0.0);
+    femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_X,0.0);
     femElasticityAddBoundaryCondition(theProblem,"right",DIRICHLET_Y,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"top",NEUMANN_Y,-pression);
+    femElasticityAddBoundaryCondition(theProblem,"middle",NEUMANN_Y,-pression);
+    femElasticityAddBoundaryCondition(theProblem,"front",NEUMANN_N,-D_surf);
     femElasticityPrint(theProblem); 
     femElasticityWrite(theProblem,"../../Project/data/problem.txt");
  

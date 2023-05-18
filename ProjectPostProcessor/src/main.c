@@ -54,7 +54,7 @@ int main(void)
 //      Creation du champ de la norme du deplacement
 //
     
-    double deformationFactor = 3e3;
+    double deformationFactor = 1e3;
     double *normDisplacement = malloc(n * sizeof(double));
     
     for (int i=0; i<n; i++) {
@@ -188,7 +188,7 @@ int main(void)
             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
         if (mode == 1) {
             glfemPlotField(theGeometry->theElements, normDisplacement);
-            glfemPlotMesh(theGeometry->theElements); 
+            //glfemPlotMesh(theGeometry->theElements); 
             sprintf(theMessage, "Number of elements : %d ",theGeometry->theElements->nElem);
             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
         if (mode == 0) {
