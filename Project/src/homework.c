@@ -55,8 +55,9 @@ int femMeshComputeBand(femMesh *theMesh)
             myMax = fmax(map[j],myMax);
             myMin = fmin(map[j],myMin); }
         if (myBand < (myMax - myMin)) myBand = myMax - myMin; 
-    }         
-    return((++myBand)*2); // Pour chaque noeud, on a une composante U et une composante V
+    }        
+    myBand *=2 ;
+    return(++myBand); // Pour chaque noeud, on a une composante U et une composante V
 }
 
 void conjugateGradient(double** A, double *b, double *x, int size) {
@@ -113,23 +114,68 @@ void conjugateGradient(double** A, double *b, double *x, int size) {
     printf("Convergence after %d iterations.\n", k);
 }
 
-double  *femBandSystemEliminate(femBandSystem *myBand)
+double* femBandSystemEliminate(femBandSystem* mySystem)
+{
+    double** A, * B, factor;
+    int     i, j, k, size;
+ 
+    A = mySystem->A;
+    B = mySystem->B;
+    size = mySystem->size;
+    int band = mySystem->band;
+ 
+    /* Gauss elimination */
+ 
+    for (k = 0; k < size; k++) {
+        if (fabs(A[k][k]) <= 1e-16) {
+            printf("Pivot index %d  ", k);
+            printf("Pivot value %e  ", A[k][k]);
+            Error("Cannot eliminate with such a pivot");
+        }
+        //int imin = max(0, i - band / 2);
+        //int jmax = min(size, k + band / 2 + 1);
+        int jmax = (size < k + band / 2 + 1) ? size : k + band / 2 + 1;
+        for (i = k + 1; i < jmax; i++) {
+            factor = A[k][i] / A[k][k];
+            for (j = k + 1; j < jmax; j++)
+                A[i][j] = A[i][j] - A[k][j] * factor;
+            B[i] = B[i] - B[k] * factor;
+        }
+    }
+ 
+    /* Back-substitution */
+ 
+    for (i = size - 1; i >= 0; i--) {
+        factor = 0;
+        int jmax = (size < i + band / 2 + 1) ? size : i + band / 2 + 1;
+        for (j = i + 1; j < jmax; j++)
+            factor += A[i][j] * B[j];
+        B[i] = (B[i] - factor) / A[i][i];
+    }
+ 
+    return(mySystem->B);
+}
+
+double  *femBandSystemEliminate2(femBandSystem *myBand)
 {
     double  **A, *B, factor;
     int     i, j, k, jend, size, band;
     A    = myBand->A;
     B    = myBand->B;
     size = myBand->size;
+    band = myBand->band;
 
     //Incomplete Cholesky factorization 
 
     for (k=0; k < size; k++) {
-        if ( fabs(A[k][k]) <= 1e-4 ) {
-            Error("Cannot eleminate with such a pivot"); }
-        jend = fmin(k + band/2 + 1,size);
+        if ( fabs(A[k][k]) <= 1e-8 ) {
+            printf("Pivot index %d  ",k);
+            printf("Pivot value %e  ",A[k][k]);
+            Error("Cannot eliminate with such a pivot"); }
+        jend = ( k + band / 2 +1 < size) ? (k + band/2 +1) : size; 
         for (i = k+1 ; i <  jend; i++) {
-            factor = A[k][i] / A[k][k];
-            for (j = i ; j < jend; j++) 
+            factor = A[i][k] / A[k][k];
+            for (j = k+1 ; j < jend; j++) 
                 A[i][j] = A[i][j] - A[k][j] * factor;
             B[i] = B[i] - B[k] * factor; }}
         
@@ -137,7 +183,7 @@ double  *femBandSystemEliminate(femBandSystem *myBand)
 
     for (i = (size-1); i >= 0 ; i--) {
         factor = 0;
-        jend = fmin(i + band/2 + 1,size);
+        jend = (i+band/2 + 1 < size) ? i + band/2+1 : size;
         for (j = i+1 ; j < jend; j++)
             factor += A[i][j] * B[j];
         B[i] = ( B[i] - factor)/A[i][i]; }
@@ -248,6 +294,8 @@ void femApplyBoundaryConditions(femProblem *theProblem) {
                     nx = normales[2 * j];   ny = normales[2 * j+1];
                     tx = tangentes[2 * j];  ty = tangentes[2 * j+1];
 
+                    node0 = theMesh->number[node0]; // renumérotation
+                    node1 = theMesh->number[node1];
                     // Modification de B
                     B_U = B[2*node0];   B_V = B[2*node0+1];
                     B[2*node0]      = nx * B_U + ny * B_V;
@@ -298,7 +346,9 @@ void femApplyBoundaryConditions(femProblem *theProblem) {
                         double x[2] = {X[node0], X[node1]};
                         double xLoc[2] = {x[0] * phi[1] + x[1] * phi[0], x[0] * phi[0] + x[1] * phi[1]};
 
-                        int shift = (cnd->type == NEUMANN_X ) ? 0 : 1;           
+                        int shift = (cnd->type == NEUMANN_X ) ? 0 : 1;    
+                        node0 = theMesh->number[node0]; // renumérotation
+                        node1 = theMesh->number[node1];       
                         B[2 * node0 + shift] += jac * cnd->value * phi[1] * xLoc[0] ; // premier point d'intégration
                         B[2 * node0 + shift] += jac * cnd->value * phi[0] * xLoc[1] ; // deuxième point d'intégration
 
@@ -307,6 +357,8 @@ void femApplyBoundaryConditions(femProblem *theProblem) {
                     }
 
                     else {
+                        node0 = theMesh->number[node0]; // renumérotation
+                        node1 = theMesh->number[node1];
                         int shift = (cnd->type == NEUMANN_X ) ? 0 : 1;
                         B[2 * node0 + shift] += jac * cnd->value;
                         B[2 * node1 + shift] += jac * cnd->value;                      
@@ -317,6 +369,8 @@ void femApplyBoundaryConditions(femProblem *theProblem) {
                     double *n_or_t = (cnd->type == NEUMANN_N) ? cnd->domain->normales : cnd->domain->tangentes;
                     // l'index du noeud gauche dans n_or_t = index de l'élement
                     // l'index du noeud gauche dans n_or_t = index de l'élement + 1
+                    node0 = theMesh->number[node0]; // renumérotation
+                    node1 = theMesh->number[node1];
                     B[2 * node0]        += jac * cnd->value *     n_or_t[2 * j];
                     B[2 * node0 + 1]    += jac * cnd->value *     n_or_t[2 * j + 1];
                     B[2 * node1]        += jac * cnd->value *     n_or_t[2 * (j+1)];
@@ -489,7 +543,6 @@ double *femElasticitySolve(femProblem *theProblem)
         }        
     }  
     femApplyBoundaryConditions(theProblem);
-
     // Résolution du système
 
     double *sol = malloc(sizeof(double) * theSystem->size); // solution avec la renumérotation
@@ -497,18 +550,27 @@ double *femElasticitySolve(femProblem *theProblem)
         B = femFullSystemEliminate(theSystem);
         sol = memcpy(sol, B, sizeof(double)*theSystem->size);
     }
-    if (theProblem->solver == SOLVEUR_BANDE) {
+    else if (theProblem->solver == SOLVEUR_BANDE) {
+        myBand = myBand * 2 + 1;
         femBandSystem *theBandSystem = femBandSystemCreate(theSystem->size, myBand);
-        for (i = 0; i < theBandSystem->size; i++){
-            int jmin = fmax(0, i - myBand/2);
-            int jmax = fmin(theBandSystem->size, i + myBand/2 +1);
+        for (i = 0; i < theSystem->size; i++){
+            int jmin = (0 > i - myBand/2) ? 0 :  i - myBand/2;
+            int jmax = (theSystem->size < i + myBand/2 +1) ? theSystem->size : i + myBand/2 +1;
             for (j = jmin; j < jmax; j++) {
                 theBandSystem->A[i][j] = A[i][j];
             }
             theBandSystem->B[i] = theSystem->B[i];
         }
-        femBandSystemEliminate(theBandSystem);
-        sol = B;
+        
+        theBandSystem->B = femBandSystemEliminate(theBandSystem);
+        for (i = 0; i < theSystem->size; i++){
+            theSystem->B[i] = theBandSystem->B[i];
+        }
+        //theSystem->B = memcpy(theSystem->B, theBandSystem->B, sizeof(double)*theSystem->size);
+        sol = memcpy(sol, theBandSystem->B, sizeof(double)*theSystem->size);
+
+        printf("Here\n");
+
     }
     else if (theProblem->solver == GRADIENTS_CONJUGUES) {
         conjugateGradient(A, B, sol, theSystem->size);  

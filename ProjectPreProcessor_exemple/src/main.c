@@ -53,7 +53,7 @@ int main(void)
     femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRAIN);
     femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_X,0.0);
     femElasticityAddBoundaryCondition(theProblem,"Bottom",DIRICHLET_Y,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"Top",NEUMANN_N,10000.0);
+    femElasticityAddBoundaryCondition(theProblem,"Top",NEUMANN_Y,-10000.0);
 
     femElasticityPrint(theProblem);
     femElasticityWrite(theProblem,"../../Project/data/problem.txt");
