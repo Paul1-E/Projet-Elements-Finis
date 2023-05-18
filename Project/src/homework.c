@@ -445,12 +445,12 @@ void femApplyBoundaryConditions(femProblem *theProblem) {
 
 }
 
-void femEquationsN_Tto_U_V(femProblem *theProblem) {
+void femEquationsN_Tto_U_V(femProblem *theProblem, double *sol) {
     femFullSystem *theSystem = theProblem->system;
     femMesh *theMesh         = theProblem->geometry->theElements;
     double **A  = theSystem->A;
-    double *B   = theSystem->B;
-
+    double *B   = sol;
+    
     for (int i = 0; i < theProblem->nBoundaryConditions; i++) {
     femBoundaryCondition* cnd = theProblem->conditions[i] ;
         if ( (cnd->type == DIRICHLET_N || cnd->type == DIRICHLET_T) &&
@@ -626,7 +626,7 @@ double *femElasticitySolve(femProblem *theProblem)
         free(temp);
     }
 
-    femEquationsN_Tto_U_V(theProblem);
+    femEquationsN_Tto_U_V(theProblem, sol);
     femFreeN_T(theProblem);
 
     // On remet les noeuds dans le bon ordre, suite à la renumérotation
