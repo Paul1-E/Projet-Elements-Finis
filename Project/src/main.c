@@ -11,6 +11,7 @@
  */
  
 #include "fem.h"
+#include "glfem.h"
 
 int main(void)
 {  
@@ -34,11 +35,35 @@ int main(void)
     femPrintStress(theStress, 10, l);  // change second arg to show the stress of the number of nodes wanted 
     double *eqStress = femPlastic(theProblem, theStress);
     femFieldWrite(theNodes->nNodes, 1, eqStress, "../data/Stress.txt", 1);
+        int mode = 1; 
+ 
+    GLFWwindow* window = glfemInit("EPL1110 : Project 2022-23 ");
+    glfwMakeContextCurrent(window);
+
+    do {
+        int w,h;
+        glfwGetFramebufferSize(window,&w,&h);
+        glfemReshapeWindows(theGeometry->theNodes,w,h);
+
+        if (mode == 1) {
+            glfemMatrix(theProblem->system->A, theProblem->system->size, w, h); 
+            glColor3f(1.0,0.0,0.0); }
+            
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    } while( glfwGetKey(window,GLFW_KEY_ESCAPE) != GLFW_PRESS &&
+             glfwWindowShouldClose(window) != 1 );
+            
+    // Check if the ESC key was pressed or the window was closed
+
+    glfwTerminate(); 
+
     femElasticityFree(theProblem);
     geoFree();
     free(theStress);
     free(eqStress);
     return 0;  
 }
+
 
  
