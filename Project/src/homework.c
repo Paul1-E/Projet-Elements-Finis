@@ -29,6 +29,7 @@ void femMeshRenumber(femMesh *theMesh, femRenumType renumType)
         case FEM_XNUM : 
             VAL = theMesh->nodes->X;
             qsort(tab, theMesh->nodes->nNodes, sizeof(int), compare);
+            break;
         case FEM_YNUM : 
             VAL = theMesh->nodes->Y; 
             qsort(tab, theMesh->nodes->nNodes, sizeof(int), compare);
