@@ -11,6 +11,7 @@
  */
  
 #include "fem.h"
+#include "glfem.h"
 
 int main(void)
 {  
