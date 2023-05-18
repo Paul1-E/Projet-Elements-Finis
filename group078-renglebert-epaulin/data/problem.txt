@@ -1,0 +1,11 @@
+Type of problem    :  Planar stresses  
+Young modulus      :  6.7000000e+10  
+Poisson ratio      :  3.4000000e-01  
+Mass density       :  2.7000000e+03  
+Gravity            :  9.8100000e+00  
+Elasticity limit   :  4.0000000e+07  
+Boundary condition :  Dirichlet-Y        =  0.0000000e+00 : left
+Boundary condition :  Dirichlet-X        =  0.0000000e+00 : left
+Boundary condition :  Dirichlet-Y        =  0.0000000e+00 : right
+Boundary condition :  Neumann-Y        = -1.3734000e+06 : middle
+Boundary condition :  Neumann-N        = -2.1739969e+01 : front

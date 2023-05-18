@@ -15,21 +15,7 @@ femGeo *geoGetGeometry()                        { return &theGeometry; }
 
 double geoSizeDefault(double x, double y)       { return theGeometry.h; }
 
-double geoGmshSize(int dim, int tag, double x, double y, double z, double lc, void *data)
-                                                { return theGeometry.geoSize(x,y);    }
-void geoInitialize() 
-{
-    int ierr;
-    theGeometry.geoSize = geoSizeDefault;
-    gmshInitialize(0,NULL,1,0,&ierr);                         ErrorGmsh(ierr);
-    gmshModelAdd("MyGeometry",&ierr);                         ErrorGmsh(ierr);
-    gmshModelMeshSetSizeCallback(geoGmshSize,NULL,&ierr);     ErrorGmsh(ierr);
-    theGeometry.theNodes = NULL;
-    theGeometry.theElements = NULL;
-    theGeometry.theEdges = NULL;
-    theGeometry.nDomains = 0;
-    theGeometry.theDomains = NULL;
-}
+
 
 
 void geoFree()
@@ -40,7 +26,9 @@ void geoFree()
         free(theGeometry.theNodes); }
     if (theGeometry.theElements) {
         free(theGeometry.theElements->elem);
-        free(theGeometry.theElements); }
+        free(theGeometry.theElements->number);
+        free(theGeometry.theElements);
+        }
     if (theGeometry.theEdges) {
         free(theGeometry.theEdges->elem);
         free(theGeometry.theEdges); }
@@ -51,12 +39,7 @@ void geoFree()
 
 }
 
-void geoFinalize() 
-{
-     int ierr;
-     geoFree();
-     gmshFinalize(&ierr); ErrorGmsh(ierr);
-}
+
 
 
 void geoSetSizeCallback(double (*geoSize)(double x, double y)) 
@@ -64,121 +47,7 @@ void geoSetSizeCallback(double (*geoSize)(double x, double y))
     theGeometry.geoSize = geoSize; }
 
 
-void geoMeshImport() 
-{
-    int ierr;
-    
-    /* Importing nodes */
-    
-    size_t nNode,n,m,*node;
-    double *xyz,*trash;
-    gmshModelMeshRenumberNodes(&ierr);                        ErrorGmsh(ierr);
-    gmshModelMeshGetNodes(&node,&nNode,&xyz,&n,
-                         &trash,&m,-1,-1,0,0,&ierr);          ErrorGmsh(ierr);                         
-    femNodes *theNodes = malloc(sizeof(femNodes));
-    theNodes->nNodes = nNode;
-    theNodes->X = malloc(sizeof(double)*(theNodes->nNodes));
-    theNodes->Y = malloc(sizeof(double)*(theNodes->nNodes));
-    for (int i = 0; i < theNodes->nNodes; i++){
-        theNodes->X[i] = xyz[3*node[i]-3];
-        theNodes->Y[i] = xyz[3*node[i]-2]; }
-    theGeometry.theNodes = theNodes;
-    gmshFree(node);
-    gmshFree(xyz);
-    gmshFree(trash);
-    printf("Geo     : Importing %d nodes \n",theGeometry.theNodes->nNodes);
-       
-    /* Importing elements */
-    /* Pas super joli : a ameliorer pour eviter la triple copie */
-        
-    size_t nElem, *elem;
-    gmshModelMeshGetElementsByType(1,&elem,&nElem,
-                               &node,&nNode,-1,0,1,&ierr);    ErrorGmsh(ierr);
-    femMesh *theEdges = malloc(sizeof(femMesh));
-    theEdges->nLocalNode = 2;
-    theEdges->nodes = theNodes;
-    theEdges->nElem = nElem;  
-    theEdges->elem = malloc(sizeof(int)*2*theEdges->nElem);
-    for (int i = 0; i < theEdges->nElem; i++)
-        for (int j = 0; j < theEdges->nLocalNode; j++)
-            theEdges->elem[2*i+j] = node[2*i+j]-1;  
-    theGeometry.theEdges = theEdges;
-    int shiftEdges = elem[0];
-    gmshFree(node);
-    gmshFree(elem);
-    printf("Geo     : Importing %d edges \n",theEdges->nElem);
-  
-    gmshModelMeshGetElementsByType(2,&elem,&nElem,
-                               &node,&nNode,-1,0,1,&ierr);    ErrorGmsh(ierr);
-    if (nElem != 0) {
-      femMesh *theElements = malloc(sizeof(femMesh));
-      theElements->nLocalNode = 3;
-      theElements->nodes = theNodes;
-      theElements->nElem = nElem;  
-      theElements->elem = malloc(sizeof(int)*3*theElements->nElem);
-      for (int i = 0; i < theElements->nElem; i++)
-          for (int j = 0; j < theElements->nLocalNode; j++)
-              theElements->elem[3*i+j] = node[3*i+j]-1;  
-      theGeometry.theElements = theElements;
-      gmshFree(node);
-      gmshFree(elem);
-      printf("Geo     : Importing %d triangles \n",theElements->nElem); }
-    
-    int nElemTriangles = nElem;
-    gmshModelMeshGetElementsByType(3,&elem,&nElem,
-                               &node,&nNode,-1,0,1,&ierr);    ErrorGmsh(ierr);
-    if (nElem != 0 && nElemTriangles != 0)  
-      Error("Cannot consider hybrid geometry with triangles and quads :-(");           
-                               
-    if (nElem != 0) {
-      femMesh *theElements = malloc(sizeof(femMesh));
-      theElements->nLocalNode = 4;
-      theElements->nodes = theNodes;
-      theElements->nElem = nElem;  
-      theElements->elem = malloc(sizeof(int)*4*theElements->nElem);
-      for (int i = 0; i < theElements->nElem; i++)
-          for (int j = 0; j < theElements->nLocalNode; j++)
-              theElements->elem[4*i+j] = node[4*i+j]-1;  
-      theGeometry.theElements = theElements;
-      gmshFree(node);
-      gmshFree(elem);
-      printf("Geo     : Importing %d quads \n",theElements->nElem); }
 
-    
-    /* Importing 1D entities */
-  
-    int *dimTags;
-    gmshModelGetEntities(&dimTags,&n,1,&ierr);        ErrorGmsh(ierr);
-    theGeometry.nDomains = n/2;
-    theGeometry.theDomains = malloc(sizeof(femDomain*)*n/2);
-    printf("Geo     : Importing %d entities \n",theGeometry.nDomains);
-
-    for (int i=0; i < n/2; i++) {
-        int dim = dimTags[2*i+0];
-        int tag = dimTags[2*i+1];
-        femDomain *theDomain = malloc(sizeof(femDomain)); 
-        theGeometry.theDomains[i] = theDomain;
-        theDomain->mesh = theEdges;
-        sprintf(theDomain->name, "Entity %d ",tag-1);
-         
-        int *elementType;
-        size_t nElementType, **elementTags, *nElementTags, nnElementTags, **nodesTags, *nNodesTags, nnNodesTags; 
-        gmshModelMeshGetElements(&elementType, &nElementType, &elementTags, &nElementTags, &nnElementTags, &nodesTags, &nNodesTags, &nnNodesTags, dim, tag, &ierr);
-        theDomain->nElem = nElementTags[0];
-        theDomain->elem = malloc(sizeof(int)*2*theDomain->nElem); 
-        for (int j = 0; j < theDomain->nElem; j++) {
-            theDomain->elem[j] = elementTags[0][j] - shiftEdges; }
-        printf("Geo     : Entity %d : %d elements \n",i,theDomain->nElem);
-        gmshFree(nElementTags);
-        gmshFree(nNodesTags);
-        gmshFree(elementTags);
-        gmshFree(nodesTags);
-        gmshFree(elementType); }
-    gmshFree(dimTags);
- 
-    return;
-
-}
 
 void geoMeshPrint() 
 {
@@ -270,6 +139,13 @@ void geoMeshRead(const char *filename)
    
    int trash, *elem;
    
+   theGeometry.geoSize = geoSizeDefault;
+   theGeometry.theNodes = NULL;
+   theGeometry.theElements = NULL;
+   theGeometry.theEdges = NULL;
+   theGeometry.nDomains = 0;
+   theGeometry.theDomains = NULL;
+   
    femNodes *theNodes = malloc(sizeof(femNodes));
    theGeometry.theNodes = theNodes;
    ErrorScan(fscanf(file, "Number of nodes %d \n", &theNodes->nNodes));
@@ -323,8 +199,10 @@ void geoMeshRead(const char *filename)
       for (int i=0; i < theDomain->nElem; i++){
           ErrorScan(fscanf(file,"%6d",&theDomain->elem[i]));
           if ((i+1) != theDomain->nElem  && (i+1) % 10 == 0) ErrorScan(fscanf(file,"\n")); }}
+    int *number = malloc(sizeof(int) * theGeometry.theElements->nodes->nNodes);
+    theGeometry.theElements->number = number;
     
-   fclose(file);
+    fclose(file);
 }
 
 void geoSetDomainName(int iDomain, char *name) 
@@ -421,10 +299,10 @@ void _p1c0_phi(double xsi, double eta, double *phi)
 
 void _p1c0_dphidx(double xsi, double eta, double *dphidxsi, double *dphideta)
 {
-    dphidxsi[0] = -1.0;  
+    dphidxsi[0] = -1.0;
     dphidxsi[1] =  1.0;
     dphidxsi[2] =  0.0;
-    dphideta[0] = -1.0;  
+    dphideta[0] = -1.0;
     dphideta[1] =  0.0;
     dphideta[2] =  1.0;
 
@@ -557,7 +435,20 @@ double* femFullSystemEliminate(femFullSystem *mySystem)
         if ( fabs(A[k][k]) <= 1e-16 ) {
             printf("Pivot index %d  ",k);
             printf("Pivot value %e  ",A[k][k]);
-            Error("Cannot eliminate with such a pivot"); }
+
+            // double Atmp;
+            // for (int l = 0; l < size; l++) { //interversion des deux lignes
+            //     Atmp = A[k+1][l];
+            //     A[k+1][l] = A[k][l];
+            //     A[k][l] = Atmp;
+            // }
+            // double Btmp = B[k+1];
+            // B[k+1] = B[k];
+            // B[k] = Btmp;
+
+            Error("Cannot eliminate with such a pivot");
+
+         }
         for (i = k+1 ; i <  size; i++) {
             factor = A[i][k] / A[k][k];
             for (j = k+1 ; j < size; j++) 
@@ -596,17 +487,33 @@ void  femFullSystemConstrain(femFullSystem *mySystem,
     B[myNode] = myValue;
 }
 
+void  femFullSystemConstrain_norm_tan(femFullSystem *mySystem, 
+                             int myNode, double myValue, double nx, double ny, int shift) 
+{
+    double  **A, *B;
+    int     i, size;
+    
+    A    = mySystem->A;
+    B    = mySystem->B;
+    size = mySystem->size;
+    
+    for (i=0; i < size; i++) 
+        A[myNode+shift][i] = 0; 
+    
+    A[myNode+shift][myNode] = nx;
+    A[myNode+shift][myNode + 1] = ny;
+    B[myNode+shift] = myValue;
+}
+
 
 femProblem *femElasticityCreate(femGeo* theGeometry, 
-                  double E, double nu, double rho, double g, double sigmaY, double m, femElasticCase iCase)
+                  double E, double nu, double rho, double g, femElasticCase iCase)
 {
     femProblem *theProblem = malloc(sizeof(femProblem));
     theProblem->E   = E;
     theProblem->nu  = nu;
     theProblem->g   = g;
     theProblem->rho = rho;
-    theProblem->sigmaY = sigmaY;
-    theProblem->m = m;
     
     if (iCase == PLANAR_STRESS) {
         theProblem->A = E/(1-nu*nu);
@@ -649,6 +556,7 @@ void femElasticityFree(femProblem *theProblem)
     
 void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain, femBoundaryType type, double value)
 {
+
     int iDomain = geoGetDomain(nameDomain);
     if (iDomain == -1)  Error("Undefined domain :-(");
 
@@ -658,15 +566,18 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
     theBoundary->type = type;
     theProblem->nBoundaryConditions++;
     int size = theProblem->nBoundaryConditions;
-    
+
+    theBoundary->domain->n_t_malloced = 0; // Utilisé lors des calculs de tangentes et normales
+    theBoundary->domain->n_t_matrix = 0; // Utilisé lors des calculs de tangentes et normales
+
     if (theProblem->conditions == NULL)
         theProblem->conditions = malloc(size*sizeof(femBoundaryCondition*));
     else 
         theProblem->conditions = realloc(theProblem->conditions, size*sizeof(femBoundaryCondition*));
     theProblem->conditions[size-1] = theBoundary;
     
-    
-    int shift;
+   
+    int shift = 0;
     if (type == DIRICHLET_X)  shift = 0;      
     if (type == DIRICHLET_Y)  shift = 1;  
     int *elem = theBoundary->domain->elem;
@@ -674,7 +585,11 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
     for (int e=0; e<nElem; e++) {
         for (int i=0; i<2; i++) {
             int node = theBoundary->domain->mesh->elem[2*elem[e]+i];
-            theProblem->constrainedNodes[2*node+shift] = size-1; }}    
+            theProblem->constrainedNodes[2*node+shift] = size-1; 
+        }
+
+    }    
+
 }
 
 void femElasticityPrint(femProblem *theProblem)  
@@ -686,7 +601,6 @@ void femElasticityPrint(femProblem *theProblem)
     printf("   Density         rho = %14.7e [kg/m3]\n",theProblem->rho);
     printf("   Gravity         g   = %14.7e [m/s2]\n",theProblem->g);
     printf("   Elasticity lim  sgY = %14.7e [m/s2]\n",theProblem->sigmaY);
-    printf("   Mass            m   = %14.7e [m/s2]\n",theProblem->m);
     
     if (theProblem->planarStrainStress == PLANAR_STRAIN)  printf("   Planar strains formulation \n");
     if (theProblem->planarStrainStress == PLANAR_STRESS)  printf("   Planar stresses formulation \n");
@@ -834,13 +748,13 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
 }
 
 
-void femFieldWrite(int size, int shift, double* value, const char *filename) {
+void femFieldWrite(int size, int shift, double* value, const char *filename, int line) {
     FILE* file = fopen(filename,"w");
 
     fprintf(file, "Size %d \n", size);
     for (int i=0; i < size; i++){
           fprintf(file,"%14.7e",value[i*shift]);
-          if ((i+1) != size  && (i+1) % 3 == 0) fprintf(file,"\n"); }
+          if ((i+1) != size  && (i+1) % line == 0) fprintf(file,"\n"); }
     fprintf(file,"\n");
     fclose(file);
 }
@@ -866,7 +780,8 @@ double femMin(double *x, int n)
     double myMin = x[0];
     int i;
     for (i=1 ;i < n; i++) 
-        myMin = fmin(myMin,x[i]);
+        myMin = (myMin < x[i] ) ? myMin : x[i]; 
+        //to replace by fmin(myMin,x[i]);
     return myMin;
 }
 
@@ -875,10 +790,10 @@ double femMax(double *x, int n)
     double myMax = x[0];
     int i;
     for (i=1 ;i < n; i++) 
-        myMax = fmax(myMax,x[i]);
+        myMax = (myMax > x[i]) ? myMax : x[i];     
+        // to replace by fmax(myMax,x[i]);
     return myMax;
 }
-
 
 void femError(char *text, int line, char *file)                                  
 { 
@@ -888,15 +803,6 @@ void femError(char *text, int line, char *file)
     exit(69);                                                 
 }
 
-void femErrorGmsh(int ierr, int line, char *file)                                  
-{ 
-    if (ierr == 0)  return;
-    printf("\n-------------------------------------------------------------------------------- ");
-    printf("\n  Error in %s at line %d : \n  error code returned by gmsh %d\n", file, line, ierr);
-    printf("--------------------------------------------------------------------- Yek Yek !! \n\n");
-    gmshFinalize(NULL);                                        
-    exit(69);                                                 
-}
 
 void femErrorScan(int test, int line, char *file)                                  
 { 

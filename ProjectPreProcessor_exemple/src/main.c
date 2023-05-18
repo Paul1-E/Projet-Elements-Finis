@@ -30,12 +30,6 @@ int main(void)
     theGeometry->elementType = FEM_QUAD;
   
     geoMeshGenerate();      // Utilisation de OpenCascade
-    
-//  geoMeshGenerateGeo();   // Utilisation de outils de GMSH  
-                            // Attention : les entit�s sont diff�rentes !
-                            // On a aussi invers� la g�omtrie pour rire !
-                            
-//    geoMeshGenerateGeoFile("../data/mesh.geo");   // Lecture fichier geo
   
     geoMeshImport();
     geoSetDomainName(1,"Top");

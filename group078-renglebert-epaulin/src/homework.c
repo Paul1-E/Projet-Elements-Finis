@@ -61,82 +61,6 @@ int femMeshComputeBand(femMesh *theMesh)
     return(++myBand); // Pour chaque noeud, on a une composante U et une composante V
 }
 
-void errorConjugateGradient(double** A, double *b, double *x, double *sol, int size) {
-    double *r = malloc(size*sizeof(double));
-    double *d = malloc(size*sizeof(double));
-    double *s = malloc(size*sizeof(double));
-    double alpha, beta, delta, deltaNew;
-    int nMax = 2000;
-    double *errorRel = malloc(nMax*sizeof(double));
-
-    // Initialisation
-    for (int i = 0; i < size; i++) {
-        r[i] = b[i];
-        d[i] = r[i];
-        x[i] = 0.0;
-    }
-
-    delta = 0.0;
-    for (int i = 0; i < size; i++)
-        delta += r[i] * r[i];
-
-    int k = 0;
-    while (delta > 1e-8 & k < nMax) {  // Critère de convergence
-        // Calcul de s
-        for (int i = 0; i < size; i++) {
-            s[i] = 0.0;
-            for (int j = 0; j < size; j++)
-                s[i] += A[i][j] * d[j];
-        }
-
-        // Calcul de alpha
-        double sd = 0.0;
-        for (int i = 0; i < size; i++)
-            sd += d[i] * s[i];
-
-        alpha = delta / sd;
-
-        // Mise à jour de x et r
-        for (int i = 0; i < size; i++) {
-            x[i] += alpha * d[i];
-            r[i] -= alpha * s[i];
-        }
-
-        // -------- Error --------
-
-        errorRel[k] = 0;
-        double sumSol = 0;
-        for (int i = 0; i < size; i++) {
-            errorRel[k] += pow((sol[i] - x[i]), 2);
-            sumSol += pow(sol[i], 2);
-        }
-        //printf("\n%14.7e\n", errorRel[k]);
-        errorRel[k] = sqrt(errorRel[k]/sumSol);
-
-        // -----------------------
-
-        deltaNew = 0.0;
-        for (int i = 0; i < size; i++)
-            deltaNew += r[i] * r[i];
-
-        // Calcul de beta
-        beta = deltaNew / delta;
-
-        // Mise à jour de d
-        for (int i = 0; i < size; i++)
-            d[i] = r[i] + beta * d[i];
-
-        delta = deltaNew;
-        k++;
-    }
-    printf("Convergence after %d iterations.\n", k);
-    femFieldWrite(k, 1, errorRel, "../data/error.txt", 1);
-    free(errorRel);
-    free(d);
-    free(s);
-    free(r);
-}
-
 void conjugateGradient(double** A, double *b, double *x, int size) {
     double *r = malloc(size*sizeof(double));
     double *d = malloc(size*sizeof(double));
@@ -620,10 +544,7 @@ double *femElasticitySolve(femProblem *theProblem)
         sol = memcpy(sol, theBandSystem->B, sizeof(double)*theSystem->size);
     }
     else if (theProblem->solver == GRADIENTS_CONJUGUES) {
-        conjugateGradient(A, B, sol, theSystem->size);  
-        double *temp = malloc(sizeof(double) * theSystem->size);
-        errorConjugateGradient(A, B, temp, sol, theSystem->size);
-        free(temp);
+        conjugateGradient(A, B, sol, theSystem->size);
     }
 
     femEquationsN_Tto_U_V(theProblem, sol);
@@ -673,6 +594,12 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
                 idxNext++;
             }
         }
+        /*if (i == 0) {  TEST OK
+            for (int j = 0; j < idxNext; j++) {
+                printf("\n%d", nextElem[j]);
+                printf("\n%d\n", theMesh->elem[nextElem[j]]);
+            }
+        }*/
         
         for (int j = 0; j < idxNext; j++) {  // For each element j next to the current node
 
@@ -754,5 +681,30 @@ void femPrintStress(double *stress, int nNodes, int l) {
         for (int i = 0; i < nNodes*l; i+=l) {
             printf("%d : rr %14.7e, zz %14.7e, rz %14.7e, qq %14.7e\n", i/l, stress[i], stress[i + 1], stress[i + 2], stress[i+4]);
         }
+    }
+}
+
+void femPrintSolver(femSolverType solver, femRenumType renumType) {
+    switch (solver) {
+        case SOLVEUR_BANDE:
+            printf("\nSolveur bande\n");
+            break;
+        case SOLVEUR_PLEIN:
+            printf("\nSolveur plein\n");
+            break;
+        case GRADIENTS_CONJUGUES:
+            printf("\nGradients conjugués\n");
+            break;
+    }
+    switch (renumType) {
+        case FEM_NO:
+            printf("Pas de renumérotation");
+            break;
+        case FEM_XNUM:
+            printf("Renumérotation X");
+            break;
+        case FEM_YNUM:
+            printf("Renumérotation Y");
+            break;
     }
 }
