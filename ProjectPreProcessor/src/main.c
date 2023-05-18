@@ -26,7 +26,7 @@ int main(void)
     
     theGeometry->LxPlate     =  Lx;
     theGeometry->LyPlate     =  Ly;     
-    theGeometry->h           =  Lx * 0.04;    
+    theGeometry->h           =  Lx * 0.05;    
     theGeometry->elementType = FEM_TRIANGLE;
   
     geoMeshGenerate();      // Utilisation de OpenCascade
@@ -45,17 +45,51 @@ int main(void)
           
 //
 //  -2- Definition du probleme
-//
-    
-    double E   = 211.e9;
-    double nu  = 0.3;
-    double rho = 7.85e3; 
+//  
+
     double g   = 9.81;
-    femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,PLANAR_STRESS);
+    double E;
+    double nu;
+    double rho;
+    double sigmaY;
+    femMat theMat = ACIER;
+
+    switch(theMat) {
+        case ACIER:
+            E   = 211.e9;
+            nu  = 0.3;
+            rho = 7.85e3;
+            sigmaY = 539.e6;
+            break;
+        case ALU:
+            E   = 67.e9;
+            nu  = 0.34;
+            rho = 2.7e3; 
+            sigmaY = 40.e6;
+            break;
+        case TITANE:
+            E   = 110.e9;
+            nu  = 0.34;
+            rho = 4.51e3; 
+            sigmaY = 824.e6;
+            break;
+        case CARBONE:
+            E   = 350.e9;
+            nu  = 0.3;
+            rho = 1.9e3; 
+            sigmaY = 3000.e6;
+            break;
+        default: Error("Unexpected material");
+    }
+     
+    double m = 80;  // [kg]
+    double pression = m * g / 5e-3;
+
+    femProblem* theProblem = femElasticityCreate(theGeometry,E,nu,rho,g,sigmaY,m,PLANAR_STRESS);
     femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_Y,0.0);
     femElasticityAddBoundaryCondition(theProblem,"left",DIRICHLET_X,0.0);
     femElasticityAddBoundaryCondition(theProblem,"right",DIRICHLET_Y,0.0);
-    femElasticityAddBoundaryCondition(theProblem,"top",NEUMANN_Y,-1e6);
+    femElasticityAddBoundaryCondition(theProblem,"top",NEUMANN_Y,-pression);
     femElasticityPrint(theProblem);
     femElasticityWrite(theProblem,"../../Project/data/problem.txt");
  

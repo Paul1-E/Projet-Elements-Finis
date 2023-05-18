@@ -103,6 +103,8 @@ typedef struct {
     femDiscrete *space;
     femIntegration *rule;
     femFullSystem *system;
+    double sigmaY;
+    double m;
 } femProblem;
 
 

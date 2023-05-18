@@ -54,7 +54,7 @@ int main(void)
 //      Creation du champ de la norme du deplacement
 //
     
-    double deformationFactor = 1e5;
+    double deformationFactor = 3e3;
     double *normDisplacement = malloc(n * sizeof(double));
     
     for (int i=0; i<n; i++) {
@@ -78,23 +78,11 @@ int main(void)
 //
 //  2.c - Creation du champ de contraintes
 //
-    int l = 4;
-    if (theProblem->planarStrainStress == AXISYM) { l = 5; }
-    double stressFactor = 1e3;
-    double *stress = malloc(n * sizeof(double));
-    double *field = malloc(n * sizeof(double) * l);
-    
-    n = n*l;
-    femFieldRead(&n, 1, field, "../../Project/data/Stress.txt", l);
-    n = n/l;
 
-    for (int i=0; i < n; i++) {
-        for (int j = 0; j < l; j++) {
-            stress[i] += pow(field[i*l + j] * stressFactor, 2);
-        }
-        stress[i] = sqrt(stress[i]);
-    }
-    free(field);
+    double *stress = malloc(n * sizeof(double));
+
+    femFieldRead(&n, 1, stress, "../../Project/data/Stress.txt", 1);
+
     double stressMin = femMin(stress, n);  
     double stressMax = femMax(stress, n);  
     printf(" ==== Minimum stress          : %14.7e \n",stressMin);
@@ -187,7 +175,7 @@ int main(void)
         if (mode == 3) {
             memcpy(theGeometry->theElements->nodes->X, X, sizeof(double)*n);
             memcpy(theGeometry->theElements->nodes->Y, Y, sizeof(double)*n);
-            glfemPlotNumbers(theGeometry->theElements);
+            glfemPlotField(theGeometry->theElements, zeros);
             glfemPlotMesh(theGeometry->theElements); 
             memcpy(theGeometry->theNodes->X, Xdef, sizeof(double)*n);
             memcpy(theGeometry->theNodes->Y, Ydef, sizeof(double)*n);
@@ -195,7 +183,7 @@ int main(void)
             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
         if (mode == 2) {
             glfemPlotField(theGeometry->theElements, stress);
-            glfemPlotMesh(theGeometry->theElements); 
+            //glfemPlotMesh(theGeometry->theElements); 
             sprintf(theMessage, "Number of elements : %d ",theGeometry->theElements->nElem);
             glColor3f(1.0,0.0,0.0); glfemMessage(theMessage); }
         if (mode == 1) {

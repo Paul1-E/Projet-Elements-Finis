@@ -107,6 +107,8 @@ typedef struct {
     femDiscrete *space;
     femIntegration *rule;
     femFullSystem *system;
+    double sigmaY;
+    double m;
 } femProblem;
 
 
@@ -165,6 +167,7 @@ void                femWarning(char *text, int line, char *file);
 
 double*             femFindStress(femProblem* theProblem, double* displacements);
 void                femPrintStress(double *stress, int nNodes, int l);
+double*             femPlastic(femProblem *theProblem, double *sigma);
 
 
 #endif

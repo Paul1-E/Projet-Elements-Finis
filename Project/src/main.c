@@ -23,15 +23,17 @@ int main(void)
     femFieldWrite(theNodes->nNodes,2,&theSoluce[0],"../data/U.txt", 3);
     femFieldWrite(theNodes->nNodes,2,&theSoluce[1],"../data/V.txt", 3);
     double *theStress = femFindStress(theProblem, theSoluce);
-    //femPrintStress(theStress, theNodes->nNodes);
-    int l = 4;
+    int l = 3;
     if (theProblem->planarStrainStress == AXISYM) {
-        l = 5;
+        l = 4;
     }
-    femFieldWrite(theNodes->nNodes*l, 1, theStress, "../data/Stress.txt", l);
+    femPrintStress(theStress, 10, l);  // change second arg to show the stress of the number of nodes wanted 
+    double *eqStress = femPlastic(theProblem, theStress);
+    femFieldWrite(theNodes->nNodes, 1, eqStress, "../data/Stress.txt", 1);
     femElasticityFree(theProblem);
     geoFree();
     free(theStress);
+    free(eqStress);
     return 0;  
 }
 

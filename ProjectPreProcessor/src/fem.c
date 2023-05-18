@@ -598,13 +598,15 @@ void  femFullSystemConstrain(femFullSystem *mySystem,
 
 
 femProblem *femElasticityCreate(femGeo* theGeometry, 
-                  double E, double nu, double rho, double g, femElasticCase iCase)
+                  double E, double nu, double rho, double g, double sigmaY, double m, femElasticCase iCase)
 {
     femProblem *theProblem = malloc(sizeof(femProblem));
     theProblem->E   = E;
     theProblem->nu  = nu;
     theProblem->g   = g;
     theProblem->rho = rho;
+    theProblem->sigmaY = sigmaY;
+    theProblem->m = m;
     
     if (iCase == PLANAR_STRESS) {
         theProblem->A = E/(1-nu*nu);
@@ -683,6 +685,8 @@ void femElasticityPrint(femProblem *theProblem)
     printf("   Poisson's ratio nu  = %14.7e [-]\n",theProblem->nu);
     printf("   Density         rho = %14.7e [kg/m3]\n",theProblem->rho);
     printf("   Gravity         g   = %14.7e [m/s2]\n",theProblem->g);
+    printf("   Elasticity lim  sgY = %14.7e [m/s2]\n",theProblem->sigmaY);
+    printf("   Mass            m   = %14.7e [m/s2]\n",theProblem->m);
     
     if (theProblem->planarStrainStress == PLANAR_STRAIN)  printf("   Planar strains formulation \n");
     if (theProblem->planarStrainStress == PLANAR_STRESS)  printf("   Planar stresses formulation \n");
@@ -719,6 +723,7 @@ void femElasticityWrite(femProblem *theProblem, const char *filename)
    fprintf(file,"Poisson ratio      : %14.7e  \n",theProblem->nu);
    fprintf(file,"Mass density       : %14.7e  \n",theProblem->rho);
    fprintf(file,"Gravity            : %14.7e  \n",theProblem->g);
+   fprintf(file,"Elasticity limit   : %14.7e  \n",theProblem->sigmaY);
       
       
    for(int i=0; i < theProblem->nBoundaryConditions; i++) {
@@ -749,6 +754,7 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
     
     int size = 2*theGeometry->theNodes->nNodes;
     theProblem->constrainedNodes = malloc(size*sizeof(int));
+
     for (int i=0; i < size; i++) 
         theProblem->constrainedNodes[i] = -1;
     
@@ -767,8 +773,8 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
     char theArgument[MAXNAME];
     double value;
     double typeCondition;
-    
-    while (feof(file) != TRUE) {
+   
+    while (!feof(file)) {
         ErrorScan(fscanf(file,"%19[^\n]s \n",(char *)&theLine));
         if (strncasecmp(theLine,"Type of problem     ",19) == 0) {
             ErrorScan(fscanf(file,":  %[^\n]s \n",(char *)&theArgument));
@@ -786,16 +792,26 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
             ErrorScan(fscanf(file,":  %le\n",&theProblem->rho)); }
         if (strncasecmp(theLine,"Gravity             ",19) == 0) {
             ErrorScan(fscanf(file,":  %le\n",&theProblem->g)); }
+        if (strncasecmp(theLine,"Elasticity limit    ",19) == 0) {
+            ErrorScan(fscanf(file,":  %le\n",&theProblem->sigmaY)); }
         if (strncasecmp(theLine,"Boundary condition  ",19) == 0) {
             ErrorScan(fscanf(file,":  %19s = %le : %[^\n]s\n",(char *)&theArgument,&value,(char *)&theDomain));
             if (strncasecmp(theArgument,"Dirichlet-X",19) == 0)
                 typeCondition = DIRICHLET_X;
             if (strncasecmp(theArgument,"Dirichlet-Y",19) == 0)
-                typeCondition = DIRICHLET_Y;                
+                typeCondition = DIRICHLET_Y;       
+            if (strncasecmp(theArgument,"Dirichlet-N",19) == 0)
+                typeCondition = DIRICHLET_N;
+            if (strncasecmp(theArgument,"Dirichlet-T",19) == 0)
+                typeCondition = DIRICHLET_T;          
             if (strncasecmp(theArgument,"Neumann-X",19) == 0)
                 typeCondition = NEUMANN_X;
             if (strncasecmp(theArgument,"Neumann-Y",19) == 0)
-                typeCondition = NEUMANN_Y;                
+                typeCondition = NEUMANN_Y; 
+            if (strncasecmp(theArgument,"Neumann-N",19) == 0)
+                typeCondition = NEUMANN_N;
+            if (strncasecmp(theArgument,"Neumann-T",19) == 0)
+                typeCondition = NEUMANN_T;                     
             femElasticityAddBoundaryCondition(theProblem,theDomain,typeCondition,value); }
         ErrorScan(fscanf(file,"\n")); }
  

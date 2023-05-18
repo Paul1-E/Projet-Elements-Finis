@@ -62,6 +62,60 @@ int femMeshComputeBand(femMesh *theMesh)
 }
 
 
+void conjugateGradient(double** A, double *b, double *x, int size) {
+    double r[size], d[size], s[size];
+    double alpha, beta, delta, deltaNew;
+
+    // Initialisation
+    for (int i = 0; i < size; i++) {
+        r[i] = b[i];
+        d[i] = r[i];
+        x[i] = 0.0;
+    }
+
+    delta = 0.0;
+    for (int i = 0; i < size; i++)
+        delta += r[i] * r[i];
+
+    int k = 0;
+    while (delta > 1e9) {  // Critère de convergence
+        // Calcul de s
+        for (int i = 0; i < size; i++) {
+            s[i] = 0.0;
+            for (int j = 0; j < size; j++)
+                s[i] += A[i][j] * d[j];
+        }
+
+        // Calcul de alpha
+        double sd = 0.0;
+        for (int i = 0; i < size; i++)
+            sd += d[i] * s[i];
+
+        alpha = delta / sd;
+
+        // Mise à jour de x et r
+        for (int i = 0; i < size; i++) {
+            x[i] += alpha * d[i];
+            r[i] -= alpha * s[i];
+        }
+
+        deltaNew = 0.0;
+        for (int i = 0; i < size; i++)
+            deltaNew += r[i] * r[i];
+
+        // Calcul de beta
+        beta = deltaNew / delta;
+
+        // Mise à jour de d
+        for (int i = 0; i < size; i++)
+            d[i] = r[i] + beta * d[i];
+
+        delta = deltaNew;
+        k++;
+    }
+    printf("Convergence after %d iterations.\n", k);
+}
+
 /*double  *femBandSystemEliminate(femFullSystem *myBand, int band)
 {
     double  **A, *B, factor;
@@ -358,12 +412,17 @@ double *femElasticitySolve(femProblem *theProblem)
             femBoundaryType constraintype = theProblem->conditions[theConstrainedNodes[i]]->type;
             if (constraintype == DIRICHLET_X || constraintype == DIRICHLET_Y) {
             femFullSystemConstrain(theSystem,i,value); }
-            }}
+            }
+        }
 
-    /*int band = femMeshComputeBand(theMesh);
-    return femBandSystemEliminate(theSystem, band);*/
 
-    B = femFullSystemEliminate(theSystem);  
+    //B = femFullSystemEliminate(theSystem);
+    double *sol = malloc(sizeof(double) * theSystem->size);
+    conjugateGradient(A, B, sol, theSystem->size);
+    B = memcpy(B, sol, sizeof(double)*theSystem->size);
+    free(sol);
+
+
     // CONDITIONS DIRICHLET N-T : On convertit les équations (N,T) en (U,V)
     for (int i = 0; i < theProblem->nBoundaryConditions; i++) {
         femBoundaryCondition* cnd = theProblem->conditions[i] ;
@@ -416,8 +475,8 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
     double c   = theProblem->C; 
     int nLocal = theMesh->nLocalNode;
 
-    int l = 4;
-    if (theProblem->planarStrainStress == AXISYM) { l = 5; }
+    int l = 3;
+    if (theProblem->planarStrainStress == AXISYM) { l = 4; }
 
     double *sigma = malloc(sizeof(double)*theNodes->nNodes*l);
     double *U = &displacements[0];
@@ -477,19 +536,17 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
                 epsilon[0] += dphidx[k] * uNode;
                 epsilon[1] += dphidy[k] * vNode;
                 epsilon[2] += (dphidx[k] * vNode + dphidy[k] * uNode) / 2;
-                epsilon[3] += (dphidy[k] * uNode + dphidx[k] * vNode) / 2;
             }
         }
         sigma[i*l] = a*epsilon[0] + b*epsilon[1];
         sigma[i*l + 1] = a*epsilon[1] + b*epsilon[0];
         sigma[i*l + 2] = 2*c*epsilon[2];
-        sigma[i*l + 3] = 2*c*epsilon[3];
 
         if (theProblem->planarStrainStress == AXISYM) {
-            epsilon[4] += U[2*theMesh->elem[i]] / theNodes->X[i];
-            sigma[i*l] += b*epsilon[4];
-            sigma[i*l + 1] += b*epsilon[4];
-            sigma[i*l + 4] = b*(epsilon[0] + epsilon[1]) + a*epsilon[4];
+            epsilon[3] += U[2*theMesh->elem[i]] / theNodes->X[i];
+            sigma[i*l] += b*epsilon[3];
+            sigma[i*l + 1] += b*epsilon[3];
+            sigma[i*l + 3] = b*(epsilon[0] + epsilon[1]) + a*epsilon[3];
         }
         
         free(epsilon);
@@ -499,16 +556,37 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
 }
 
 
+double *femPlastic(femProblem *theProblem, double *sigma) {
+    // Compute the von Mises equivalent constraint
+    int l = 3;
+    if (theProblem->planarStrainStress == AXISYM) { l = 4; }
+    int n = theProblem->geometry->theNodes->nNodes;
+
+    double *sigEq = malloc(sizeof(double) * n);
+
+    for (int i = 0; i < n; i++) {
+        double sigtt = 0;
+        if (l==4) {
+            sigtt = sigma[l*i+3]; }
+        // Von Mises
+        sigEq[i] = sqrt((pow(sigma[l*i]-sigma[l*i+1], 2) + pow(sigma[l*i+1]-sigtt,2) + pow(sigtt-sigma[i*l],2))/2 + 3*pow(sigma[i*l+2],2));
+    }
+    double sigMax = femMax(sigEq, n);
+    printf("\nLa limite de plasticité est de %14.7e, la contrainte équivalente maximale : %14.7e -> %14.7f\%\n", theProblem->sigmaY, sigMax, sigMax/theProblem->sigmaY);
+    return sigEq;
+}
+
+
 void femPrintStress(double *stress, int nNodes, int l) {
-    printf("\n ----------------- Stresses -----------------\n\n");
-    if (l == 4) {
+    printf("\n ----------------- Stress -----------------\n\n");
+    if (l == 3) {
         for (int i = 0; i < nNodes*l; i+=l) {
-            printf("%d : xx %14.7e, xy %14.7e, yx %14.7e, yy %14.7e\n", i/l, stress[i], stress[i + 2], stress[i + 3], stress[i + 1]);
+            printf("%d : xx %14.7e, xy %14.7e, yy %14.7e\n", i/l, stress[i], stress[i + 2], stress[i + 1]);
         }
     }
     else {
         for (int i = 0; i < nNodes*l; i+=l) {
-            printf("%d : rr %14.7e, zz %14.7e, rz %14.7e, zr %14.7e, qq %14.7e\n", i/l, stress[i], stress[i + 1], stress[i + 2], stress[i + 3], stress[i+4]);
+            printf("%d : rr %14.7e, zz %14.7e, rz %14.7e, qq %14.7e\n", i/l, stress[i], stress[i + 1], stress[i + 2], stress[i+4]);
         }
     }
 }

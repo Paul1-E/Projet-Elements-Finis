@@ -600,6 +600,8 @@ void femElasticityPrint(femProblem *theProblem)
     printf("   Poisson's ratio nu  = %14.7e [-]\n",theProblem->nu);
     printf("   Density         rho = %14.7e [kg/m3]\n",theProblem->rho);
     printf("   Gravity         g   = %14.7e [m/s2]\n",theProblem->g);
+    printf("   Elasticity lim  sgY = %14.7e [m/s2]\n",theProblem->sigmaY);
+    printf("   Mass            m   = %14.7e [m/s2]\n",theProblem->m);
     
     if (theProblem->planarStrainStress == PLANAR_STRAIN)  printf("   Planar strains formulation \n");
     if (theProblem->planarStrainStress == PLANAR_STRESS)  printf("   Planar stresses formulation \n");
@@ -636,6 +638,7 @@ void femElasticityWrite(femProblem *theProblem, const char *filename)
    fprintf(file,"Poisson ratio      : %14.7e  \n",theProblem->nu);
    fprintf(file,"Mass density       : %14.7e  \n",theProblem->rho);
    fprintf(file,"Gravity            : %14.7e  \n",theProblem->g);
+   fprintf(file,"Elasticity limit   : %14.7e  \n",theProblem->sigmaY);
       
       
    for(int i=0; i < theProblem->nBoundaryConditions; i++) {
@@ -704,6 +707,8 @@ femProblem* femElasticityRead(femGeo* theGeometry, const char *filename)
             ErrorScan(fscanf(file,":  %le\n",&theProblem->rho)); }
         if (strncasecmp(theLine,"Gravity             ",19) == 0) {
             ErrorScan(fscanf(file,":  %le\n",&theProblem->g)); }
+        if (strncasecmp(theLine,"Elasticity limit    ",19) == 0) {
+            ErrorScan(fscanf(file,":  %le\n",&theProblem->sigmaY)); }
         if (strncasecmp(theLine,"Boundary condition  ",19) == 0) {
             ErrorScan(fscanf(file,":  %19s = %le : %[^\n]s\n",(char *)&theArgument,&value,(char *)&theDomain));
             if (strncasecmp(theArgument,"Dirichlet-X",19) == 0)

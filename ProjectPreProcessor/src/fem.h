@@ -30,6 +30,7 @@ typedef enum {FEM_TRIANGLE,FEM_QUAD} femElementType;
 typedef enum {DIRICHLET_X,DIRICHLET_Y,DIRICHLET_N,DIRICHLET_T,
               NEUMANN_X,NEUMANN_Y,NEUMANN_N,NEUMANN_T} femBoundaryType;
 typedef enum {PLANAR_STRESS,PLANAR_STRAIN,AXISYM} femElasticCase;
+typedef enum {ALU,ACIER,CARBONE,TITANE} femMat;
 
 
 typedef struct {
@@ -103,6 +104,8 @@ typedef struct {
     femDiscrete *space;
     femIntegration *rule;
     femFullSystem *system;
+    double sigmaY;
+    double m;
 } femProblem;
 
 
@@ -124,7 +127,7 @@ void                geoFinalize();
 void                geoFree();
 
 femProblem*         femElasticityCreate(femGeo* theGeometry, 
-                                      double E, double nu, double rho, double g, femElasticCase iCase);
+                                      double E, double nu, double rho, double g, double sigmaY, double m, femElasticCase iCase);
 void                femElasticityFree(femProblem *theProblem);
 void                femElasticityPrint(femProblem *theProblem);
 void                femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain, femBoundaryType type, double value);
