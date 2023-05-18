@@ -21,7 +21,9 @@ double computeTime(clock_t start, clock_t end) {
 
 
 int main(void)
-{  
+{   
+    double start, end;
+
     femSolverType solver = SOLVEUR_PLEIN;   // TODO : request user input
     femRenumType renumType= FEM_NO;                // TODO : request user input
     femGeo* theGeometry = geoGetGeometry();   
