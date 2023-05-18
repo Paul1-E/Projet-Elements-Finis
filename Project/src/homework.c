@@ -472,7 +472,7 @@ void femApplyBoundaryConditions(femProblem *theProblem) {
             if (cndType == DIRICHLET_X || cndType == DIRICHLET_Y) {
                 int shift = (cndType ==DIRICHLET_X) ? 0 : 1;
                 int node = (i - shift) / 2;
-                int index = theMesh->number[node] * 2 + shift;
+                int index = theMesh->number[node] * 2 + shift;  // renumérotation
                 femFullSystemConstrain(theSystem, index,value); }
             }
         }
@@ -506,6 +506,7 @@ void femEquationsN_Tto_U_V(femProblem *theProblem) {
                 nx = normales[2 * j];   ny = normales[2 * j+1];          
                 tx = tangentes[2 * j];  ty = tangentes[2 * j+1];
 
+                node0 = theMesh->number[node0]; // renumérotation
                 double B_U = B[2*node0];    double B_V = B[2*node0+1];
                 B[2*node0]      = nx * B_U + ny * B_V;
                 B[2*node0 + 1]  = tx * B_U + ty * B_V;
@@ -624,9 +625,10 @@ double *femElasticitySolve(femProblem *theProblem)
                 B[mapY[i]] -= phi[i] * xLoc * g * rho * jac * weight; }} 
         }        
     }  
+    
     femApplyBoundaryConditions(theProblem);
+    
     // Résolution du système
-
     double *sol = malloc(sizeof(double) * theSystem->size); // solution avec la renumérotation
     if (theProblem->solver == SOLVEUR_PLEIN) {
         B = femFullSystemEliminate(theSystem);
@@ -650,9 +652,6 @@ double *femElasticitySolve(femProblem *theProblem)
         }
         //theSystem->B = memcpy(theSystem->B, theBandSystem->B, sizeof(double)*theSystem->size);
         sol = memcpy(sol, theBandSystem->B, sizeof(double)*theSystem->size);
-
-        printf("Here\n");
-
     }
     else if (theProblem->solver == GRADIENTS_CONJUGUES) {
         conjugateGradient(A, B, sol, theSystem->size);  
