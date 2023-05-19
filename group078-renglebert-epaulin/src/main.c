@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
         l = 4;
     }
     femPrintStress(theStress, 10, l);  // change second arg to show the stress of the number of nodes wanted 
-    //double *eqStress = femPlastic(theProblem, theStress);
-    //femFieldWrite(theNodes->nNodes, 1, eqStress, "../data/Stress.txt", 1);
+    double *eqStress = femPlastic(theProblem, theStress);
+    femFieldWrite(theNodes->nNodes, 1, eqStress, "../data/Stress.txt", 1);
     printf("\nComputing solution takes %.6f seconds\n", computeTime(start, end));
 
     femElasticityFree(theProblem);
