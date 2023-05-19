@@ -10,4 +10,6 @@ Arguments :
         b. X : Renumerotation by X
         c. Y : Renumerotation by Y
 
+Example : ./myFem data/mesh.txt data/problem.txt B X
+
 All arguments are optional but they must be used in this order.

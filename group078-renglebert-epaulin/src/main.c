@@ -67,9 +67,11 @@ int main(int argc, char *argv[])
     theProblem->solver = solver;
     theProblem->renumType = renumType;
     femElasticityPrint(theProblem);
+
     start = clock();
     double *theSoluce = femElasticitySolve(theProblem); 
     end = clock();
+    
     femNodes *theNodes = theGeometry->theNodes;
     femFieldWrite(theNodes->nNodes,2,&theSoluce[0],"../data/U.txt", 3);
     femFieldWrite(theNodes->nNodes,2,&theSoluce[1],"../data/V.txt", 3);
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
     if (theProblem->planarStrainStress == AXISYM) {
         l = 4;
     }
-    //femPrintStress(theStress, 10, l);  // change second arg to show the stress of the number of nodes wanted 
+    femPrintStress(theStress, 10, l);  // change second arg to show the stress of the number of nodes wanted 
     double *eqStress = femPlastic(theProblem, theStress);
     femFieldWrite(theNodes->nNodes, 1, eqStress, "../data/Stress.txt", 1);
     printf("\nComputing solution takes %.6f seconds\n", computeTime(start, end));
@@ -86,7 +88,7 @@ int main(int argc, char *argv[])
     femElasticityFree(theProblem);
     geoFree();
     free(theStress);
-    //free(eqStress);
+    free(eqStress);
     return 0;  
 }
 
