@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 project(myFemProject)
 
-set(EXEC_NAME myPreProcessing)
+set(EXEC_NAME myFem)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
@@ -41,7 +41,7 @@ include_directories(${GMSH_INCLUDE_DIR})
 
 
 # link the aforementioned libraries
-add_executable(${EXEC_NAME} src/fem.c src/glfem.c src/mesh.c src/preProcessing.c)
+add_executable(${EXEC_NAME} src/fem.c src/glfem.c src/homework.c src/main.c)
 target_link_libraries(${EXEC_NAME} glfw ${OPENGL_gl_LIBRARY} ${GMSH_LIBRARY})
 
 if(APPLE)
@@ -58,10 +58,5 @@ endif()
 target_compile_definitions(${EXEC_NAME} PRIVATE graphic)
 
 # add a custom target so we can do make run directly
-add_custom_target(preProcess COMMAND ${EXEC_NAME} DEPENDS ${EXEC_NAME} COMMENT "./${EXEC_NAME}")
-
-# -----------------------------------------------------------------------------------
-
-
-
+add_custom_target(run COMMAND ${EXEC_NAME} DEPENDS ${EXEC_NAME} COMMENT "./${EXEC_NAME}")
 
