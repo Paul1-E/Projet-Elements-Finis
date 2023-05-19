@@ -30,6 +30,7 @@ typedef enum {DIRICHLET_X,DIRICHLET_Y,DIRICHLET_N,DIRICHLET_T,
 typedef enum {PLANAR_STRESS,PLANAR_STRAIN,AXISYM} femElasticCase;
 typedef enum {FEM_NO,FEM_XNUM,FEM_YNUM} femRenumType;
 typedef enum {SOLVEUR_PLEIN, SOLVEUR_BANDE, GRADIENTS_CONJUGUES} femSolverType;
+typedef enum {ALU,ACIER,CARBONE,TITANE} femMat;
 
 typedef struct {
     double *B;
@@ -137,7 +138,7 @@ void                geoFinalize();
 void                geoFree();
 
 femProblem*         femElasticityCreate(femGeo* theGeometry, 
-                                      double E, double nu, double rho, double g, femElasticCase iCase);
+                                      double E, double nu, double rho, double g, double sigmaY, femElasticCase iCase);
 void                femElasticityFree(femProblem *theProblem);
 void                femElasticityPrint(femProblem *theProblem);
 void                femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain, femBoundaryType type, double value);
@@ -177,6 +178,8 @@ void                femWarning(char *text, int line, char *file);
 double*             femFindStress(femProblem* theProblem, double* displacements);
 void                femPrintStress(double *stress, int nNodes, int l);
 double*             femPlastic(femProblem *theProblem, double *sigma);
+void                geoMeshGenerate_standard_small();
+void                geoMeshGenerate_BMX();
 
 
 #endif

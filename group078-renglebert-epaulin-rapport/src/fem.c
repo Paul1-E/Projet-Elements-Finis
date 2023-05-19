@@ -507,13 +507,14 @@ void  femFullSystemConstrain_norm_tan(femFullSystem *mySystem,
 
 
 femProblem *femElasticityCreate(femGeo* theGeometry, 
-                  double E, double nu, double rho, double g, femElasticCase iCase)
+                  double E, double nu, double rho, double g, double sigmaY, femElasticCase iCase)
 {
     femProblem *theProblem = malloc(sizeof(femProblem));
     theProblem->E   = E;
     theProblem->nu  = nu;
     theProblem->g   = g;
     theProblem->rho = rho;
+    theProblem->sigmaY = sigmaY;
     
     if (iCase == PLANAR_STRESS) {
         theProblem->A = E/(1-nu*nu);
@@ -543,6 +544,7 @@ femProblem *femElasticityCreate(femGeo* theGeometry,
     theProblem->system   = femFullSystemCreate(size); 
     return theProblem;
 }
+
 
 void femElasticityFree(femProblem *theProblem)
 {
