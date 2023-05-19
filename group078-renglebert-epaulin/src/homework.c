@@ -1,12 +1,5 @@
 #include "fem.h"
 
-// Il faut un fifrelin generaliser ce code.....
-//  (1) Ajouter l'axisymétrique !    (mandatory)
-//  (2) Ajouter les conditions de Neumann !   (mandatory)  
-//  (3) Ajouter les conditions en normal et tangentiel !   (strongly advised)
-//  (4) Et remplacer le solveur plein par un truc un fifrelin plus subtil  (mandatory)
-
-
 double* VAL;
 
 int compare(const void *a, const void *b) {
@@ -540,8 +533,11 @@ double *femElasticitySolve(femProblem *theProblem)
         for (i = 0; i < theSystem->size; i++){
             theSystem->B[i] = theBandSystem->B[i];
         }
-        //theSystem->B = memcpy(theSystem->B, theBandSystem->B, sizeof(double)*theSystem->size);
         sol = memcpy(sol, theBandSystem->B, sizeof(double)*theSystem->size);
+        free(theBandSystem->A);
+        free(theBandSystem->B);
+        free(theBandSystem);
+
     }
     else if (theProblem->solver == GRADIENTS_CONJUGUES) {
         conjugateGradient(A, B, sol, theSystem->size);
@@ -555,6 +551,7 @@ double *femElasticitySolve(femProblem *theProblem)
         B[2*i] = sol[2* theMesh->number[i]];
         B[2*i + 1] = sol[2* theMesh->number[i] + 1];
     }
+    free(sol);
     return B;
 }
 
@@ -594,12 +591,6 @@ double *femFindStress(femProblem *theProblem, double *displacements) {
                 idxNext++;
             }
         }
-        /*if (i == 0) {  TEST OK
-            for (int j = 0; j < idxNext; j++) {
-                printf("\n%d", nextElem[j]);
-                printf("\n%d\n", theMesh->elem[nextElem[j]]);
-            }
-        }*/
         
         for (int j = 0; j < idxNext; j++) {  // For each element j next to the current node
 

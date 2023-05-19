@@ -549,6 +549,9 @@ void femElasticityFree(femProblem *theProblem)
     femFullSystemFree(theProblem->system);
     femIntegrationFree(theProblem->rule);
     femDiscreteFree(theProblem->space);
+    for (int i = 0; i < theProblem->nBoundaryConditions; i++){
+        free(theProblem->conditions[i]);
+    }
     free(theProblem->conditions);
     free(theProblem->constrainedNodes);
     free(theProblem);
