@@ -163,5 +163,4 @@ void                femErrorScan(int test, int line, char *file);
 void                femErrorGmsh(int test, int line, char *file);
 void                femWarning(char *text, int line, char *file);
 
-
 #endif
